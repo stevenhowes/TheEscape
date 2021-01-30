@@ -12,10 +12,17 @@ DEF PROC_main
   PlayerVelocity%=0
   PlayerShields%=100
   PlayerStructuralIntegrity%=100
-  XMovePerCent%=5
+  XMovePerCent%=10
+  ResetShipSprite% = 0
 
   REM Show/hide debug display
   DebugOut%=0
+
+  DIM SpecLocations%(1,49)
+  FOR Spec%=0 TO 49
+    SpecLocations%(0,Spec%) = RND(1600)
+    SpecLocations%(1,Spec%) = RND(1200)
+  NEXT Spec%
 
   REM Used for centiseconds per frame calcs
   Cents% = TIME
@@ -34,15 +41,27 @@ DEF PROC_main
     REM Set grpahics buffer to one that's not in use
     SYS "OS_Byte",112,Scr%
 
-
-
     CLS
+
+    FOR Spec%=0 TO 49
+      GCOL 0,0
+      LINE SpecLocations%(0,Spec%),SpecLocations%(1,Spec%),SpecLocations%(0,Spec%),SpecLocations%(1,Spec%)
+      SpecLocations%(1,Spec%) = SpecLocations%(1,Spec%) - (Cents% - LastCents%)
+      IF SpecLocations%(1,Spec%) < 0 THEN
+        SpecLocations%(1,Spec%) = 1200
+        SpecLocations%(0,Spec%) = RND(1600)
+      ENDIF
+    NEXT Spec%
 
     REM Draw LCARS in top left
     PROCdraw_sprite("lcars",0,940)
 
     IF DebugOut% = 1 THEN
       PROCdebugoutput
+    ENDIF
+
+    IF Cents% > ResetShipSprite% THEN
+      ShipSprite$ = "player_ship"
     ENDIF
 
     REM Handle Key inputs
@@ -68,7 +87,7 @@ DEF PROC_main
     PRINT PlayerVelocity%
 
     REM Draw player ship
-    PROCdraw_sprite("player_ship",PlayerLocation%(0),PlayerLocation%(1))
+    PROCdraw_sprite(ShipSprite$,PlayerLocation%(0),PlayerLocation%(1))
 
     REM Wait for rendering to complete
     WAIT
@@ -85,16 +104,18 @@ ENDPROC
 
 REM Input handling
 DEF PROCinputs
-  REM TODO: Scan individual keys so we can handle specials (e.g. arrows)
-  KEY = INKEY(0)
-
-  IF KEY = 100 THEN
+  *FX 4
+  IF INKEY(-122) THEN
+    ShipSprite$ = "player_shipr"
+    ResetShipSprite% = Cents% + 20
     PlayerLocation%(0) = PlayerLocation%(0) + (XMovePerCent% * (Cents% - LastCents%))
   ENDIF
-  IF KEY = 97 THEN
+  IF INKEY(-26) THEN
+    ShipSprite$ = "player_shipl"
+    ResetShipSprite% = Cents% + 20
     PlayerLocation%(0) = PlayerLocation%(0) - (XMovePerCent% * (Cents% - LastCents%))
   ENDIF
-  IF KEY = 113 THEN
+  IF INKEY(-17) THEN
       IF DebugOut% = 1 THEN DebugOut% = 0 ELSE DebugOut% = 1
   ENDIF
 ENDPROC
@@ -103,11 +124,6 @@ REM Debug prints
 DEF PROCdebugoutput
   MOVE 0,500
   PRINT "X:   " + STR$(PlayerLocation%(0)) " Y: " STR$(PlayerLocation%(1))
-  IF KEY <> -1 THEN
-    PRINT "Key: " + STR$(KEY)
-  ELSE
-    PRINT "Key:"
-  ENDIF
   PRINT "CPF: " + STR$(Cents% - LastCents%)
 ENDPROC
 
