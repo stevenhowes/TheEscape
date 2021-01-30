@@ -1,0 +1,5 @@
+Set TheEscape$Dir <Obey$Dir>
+IconSprites <TheEscape$Dir>.!Sprites
+WimpSlot -min 320k -max 320k
+Dir <TheEscape$Dir>
+Run <TheEscape$Dir>.!RunImage
