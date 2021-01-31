@@ -20,7 +20,7 @@ DEF PROC_main
   PlayerHitbox%() = 0,0,60,81
 
   DIM EnemyHitbox%(0,3)
-  EnemyHitbox%() = 0,0,48,74
+  EnemyHitbox%() = 0,0,148,74
 
   XMovePerCent%=5
   ResetShipSprite% = 0
@@ -120,7 +120,7 @@ DEF PROCenemy_ship_move
   REM TODO: Only uses player velocity currently (/2 so they don't match stars)
   FOR Enemy%=0 TO MaxEnemies% - 1
     EnemyLocations%(Enemy%,1) = EnemyLocations%(Enemy%,1) - ((Cents% - LastCents%) * PlayerVelocity%/20)
-    IF EnemyLocations%(Enemy%,1) < 0 THEN
+    IF EnemyLocations%(Enemy%,1) <= 0 THEN
       EnemyLocations%(Enemy%,1) = SCREENGFXHEIGHT% + RND(SCREENGFXHEIGHT%)
       EnemyLocations%(Enemy%,0) = RND(SCREENGFXWIDTH%)
     ENDIF
@@ -161,7 +161,23 @@ DEF PROCenemy_ship_collide
     w1 = EnemyHitbox%(EnemyHitboxID%(Enemy%),2)
     h1 = EnemyHitbox%(EnemyHitboxID%(Enemy%),3)
 
-    REM TODO: Collision with another enemy
+    REM Collision with another enemy
+    REM TEST
+    REM TESt
+    FOR Enemy2%=0 TO MaxEnemies% - 1
+      If Enemy% > Enemy2% THEN
+        x2 = EnemyLocations%(Enemy2%,0) + EnemyHitbox%(EnemyHitboxID%(Enemy2%),0)
+        y2 = EnemyLocations%(Enemy2%,1) + EnemyHitbox%(EnemyHitboxID%(Enemy2%),1)
+        w2 = EnemyHitbox%(EnemyHitboxID%(Enemy2%),2)
+        h2 = EnemyHitbox%(EnemyHitboxID%(Enemy2%),3)
+        IF FNcollide(x1, y1, w1, h1, x2, y2, w2, h2) = 1 THEN
+          MOVE x1+w1,y1+h1
+          IF DebugOut% = 1 THEN
+           PRINT STR$(Enemy%) + " hit " + STR$(Enemy2%)
+          ENDIF
+        ENDIF
+      ENDIF
+    NEXT Enemy2%
 
     REM Collision with a player
     x2 = PlayerLocation%(0) + PlayerHitbox%(0)
@@ -280,6 +296,3 @@ DEF FNload_sprites(sprite_file$)
   SYS "OS_SpriteOp",9+256,area_ptr%
   SYS "OS_SpriteOp",10+256,area_ptr%,sprite_file$
 =area_ptr%
-
-
-
