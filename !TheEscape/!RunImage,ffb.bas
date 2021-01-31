@@ -161,24 +161,6 @@ DEF PROCenemy_ship_collide
     w1 = EnemyHitbox%(EnemyHitboxID%(Enemy%),2)
     h1 = EnemyHitbox%(EnemyHitboxID%(Enemy%),3)
 
-    REM Collision with another enemy
-    REM TEST
-    REM TESt
-    FOR Enemy2%=0 TO MaxEnemies% - 1
-      If Enemy% > Enemy2% THEN
-        x2 = EnemyLocations%(Enemy2%,0) + EnemyHitbox%(EnemyHitboxID%(Enemy2%),0)
-        y2 = EnemyLocations%(Enemy2%,1) + EnemyHitbox%(EnemyHitboxID%(Enemy2%),1)
-        w2 = EnemyHitbox%(EnemyHitboxID%(Enemy2%),2)
-        h2 = EnemyHitbox%(EnemyHitboxID%(Enemy2%),3)
-        IF FNcollide(x1, y1, w1, h1, x2, y2, w2, h2) = 1 THEN
-          MOVE x1+w1,y1+h1
-          IF DebugOut% = 1 THEN
-           PRINT STR$(Enemy%) + " hit " + STR$(Enemy2%)
-          ENDIF
-        ENDIF
-      ENDIF
-    NEXT Enemy2%
-
     REM Collision with a player
     x2 = PlayerLocation%(0) + PlayerHitbox%(0)
     y2 = PlayerLocation%(1) + PlayerHitbox%(1)
@@ -188,12 +170,31 @@ DEF PROCenemy_ship_collide
       MOVE x1+w1,y1+h1
       PlayerVelocity% = 0
       PRINT "BOOM"
-      IF DebugOut% = 1 THEN
-       PRINT " hits player"
-      ENDIF
+      REM IF DebugOut% = 1 THEN
+      REM  PRINT " hits player"
+      REM ENDIF
     ENDIF
 
-    REM TODO: Collision with projectile
+    CollidesWith% = Enemy%
+
+    FOR OtherEnemy%=0 TO MaxEnemies% - 1
+      REM Collision with an enemy
+      x2 = EnemyLocations%(OtherEnemy%,0) + EnemyHitbox%(EnemyHitboxID%(OtherEnemy%),0)
+      y2 = EnemyLocations%(OtherEnemy%,1) + EnemyHitbox%(EnemyHitboxID%(OtherEnemy%),1)
+      w2 = EnemyHitbox%(EnemyHitboxID%(OtherEnemy%),2)
+      h2 = EnemyHitbox%(EnemyHitboxID%(OtherEnemy%),3)
+      IF FNcollide(x1, y1, w1, h1, x2, y2, w2, h2) = 1 THEN
+        CollidesWith% = OtherEnemy%
+      ENDIF
+    NEXT OtherEnemy%
+
+    REM Breaker
+    REM Breaker
+
+    IF 1 = 1 THEN
+    PRINT "1"
+    PRINT "1"
+    ENDIF
 
   NEXT Enemy%
 ENDPROC
