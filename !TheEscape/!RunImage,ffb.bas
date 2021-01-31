@@ -1,3 +1,6 @@
+SCREENMODE%=32
+SCREENGFXWIDTH%=1600
+SCREENGFXHEIGHT%=1200
 
 PROC_main
 END
@@ -7,12 +10,14 @@ DEF PROC_main
   DIM Scr% 0
 
   DIM PlayerLocation%(1)
-  PlayerLocation%(0) = 800
+  PlayerLocation%(0) = SCREENGFXWIDTH%/2
   PlayerLocation%(1) = 100
-  PlayerVelocity%=1
+  PlayerVelocity%=0
   PlayerShields%=100
   PlayerStructuralIntegrity%=100
-  XMovePerCent%=10
+  DIM PlayerHitbox%(3)
+  PlayerHitbox%() = 0,0,60,81
+  XMovePerCent%=5
   ResetShipSprite% = 0
 
   REM Show/hide debug display
@@ -20,15 +25,17 @@ DEF PROC_main
 
   DIM SpecLocations%(1,49)
   FOR Spec%=0 TO 49
-    SpecLocations%(0,Spec%) = RND(1600)
-    SpecLocations%(1,Spec%) = RND(1200)
+    SpecLocations%(0,Spec%) = RND(SCREENGFXWIDTH%)
+    SpecLocations%(1,Spec%) = RND(SCREENGFXHEIGHT%)
   NEXT Spec%
 
   REM Used for centiseconds per frame calcs
   Cents% = TIME
 
-  REM 800x600x256 GFX Area 1600x1200
-  MODE 32
+  MODE SCREENMODE%
+
+  REM Position text cursor at graphics location
+  VDU 5
 
   REM Sprite set
   sprite_area% = FNload_sprites("Spr")
@@ -43,23 +50,21 @@ DEF PROC_main
 
     CLS
 
+    REM Space dust / stars
     FOR Spec%=0 TO 49
       GCOL 0,0
       LINE SpecLocations%(0,Spec%),SpecLocations%(1,Spec%),SpecLocations%(0,Spec%),SpecLocations%(1,Spec%)
       SpecLocations%(1,Spec%) = SpecLocations%(1,Spec%) - ((Cents% - LastCents%) * PlayerVelocity%/10)
       IF SpecLocations%(1,Spec%) < 0 THEN
-        SpecLocations%(1,Spec%) = 1200
-        SpecLocations%(0,Spec%) = RND(1600)
+        SpecLocations%(1,Spec%) = SCREENGFXHEIGHT%
+        SpecLocations%(0,Spec%) = RND(SCREENGFXWIDTH%)
       ENDIF
     NEXT Spec%
 
     REM Draw LCARS in top left
-    PROCdraw_sprite("lcars",0,940)
+    PROCdraw_sprite("lcars",4,SCREENGFXHEIGHT%-180)
 
-    IF DebugOut% = 1 THEN
-      PROCdebugoutput
-    ENDIF
-
+    REM If using l/r sprites we debounce to stop it looking twitchy
     IF Cents% > ResetShipSprite% THEN
       ShipSprite$ = "player_ship"
     ENDIF
@@ -67,9 +72,7 @@ DEF PROC_main
     REM Handle Key inputs
     PROCinputs
 
-    REM Use graphics cursor for text (TODO: Is this needed in loop?_)
-    VDU 5
-
+    REM Attribute names
     GCOL 0,0
     MOVE 75,1150
     PRINT "Sheilds"
@@ -78,6 +81,7 @@ DEF PROC_main
     MOVE 75,1090
     PRINT "Velocity"
 
+    REM Attribute values
     GCOL 0,7
     MOVE 130,1150
     PRINT PlayerShields%
@@ -88,6 +92,10 @@ DEF PROC_main
 
     REM Draw player ship
     PROCdraw_sprite(ShipSprite$,PlayerLocation%(0),PlayerLocation%(1))
+
+    IF DebugOut% = 1 THEN
+      PROCdebugoutput
+    ENDIF
 
     REM Wait for rendering to complete
     WAIT
@@ -137,6 +145,7 @@ DEF PROCdebugoutput
   MOVE 0,500
   PRINT "X:   " + STR$(PlayerLocation%(0)) " Y: " STR$(PlayerLocation%(1))
   PRINT "CPF: " + STR$(Cents% - LastCents%)
+  RECT PlayerLocation%(0) + PlayerHitbox%(0), PlayerLocation%(1) + PlayerHitbox%(1), PlayerHitbox%(2), PlayerHitbox%(3)
 ENDPROC
 
 REM Delay routine - thanks Sophie
