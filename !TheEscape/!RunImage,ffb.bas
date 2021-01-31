@@ -9,7 +9,7 @@ DEF PROC_main
   DIM PlayerLocation%(1)
   PlayerLocation%(0) = 800
   PlayerLocation%(1) = 100
-  PlayerVelocity%=0
+  PlayerVelocity%=1
   PlayerShields%=100
   PlayerStructuralIntegrity%=100
   XMovePerCent%=10
@@ -46,7 +46,7 @@ DEF PROC_main
     FOR Spec%=0 TO 49
       GCOL 0,0
       LINE SpecLocations%(0,Spec%),SpecLocations%(1,Spec%),SpecLocations%(0,Spec%),SpecLocations%(1,Spec%)
-      SpecLocations%(1,Spec%) = SpecLocations%(1,Spec%) - (Cents% - LastCents%)
+      SpecLocations%(1,Spec%) = SpecLocations%(1,Spec%) - ((Cents% - LastCents%) * PlayerVelocity%/10)
       IF SpecLocations%(1,Spec%) < 0 THEN
         SpecLocations%(1,Spec%) = 1200
         SpecLocations%(0,Spec%) = RND(1600)
@@ -114,6 +114,18 @@ DEF PROCinputs
     ShipSprite$ = "player_shipl"
     ResetShipSprite% = Cents% + 20
     PlayerLocation%(0) = PlayerLocation%(0) - (XMovePerCent% * (Cents% - LastCents%))
+  ENDIF
+  IF INKEY(-58) THEN
+     PlayerVelocity% = PlayerVelocity% + 1
+     IF PlayerVelocity% > 100 THEN
+       PlayerVelocity% = 100
+     ENDIF
+  ENDIF
+  IF INKEY(-42) THEN
+     PlayerVelocity% = PlayerVelocity% - 1
+     IF PlayerVelocity% < 0 THEN
+       PlayerVelocity% = 0
+     ENDIF
   ENDIF
   IF INKEY(-17) THEN
       IF DebugOut% = 1 THEN DebugOut% = 0 ELSE DebugOut% = 1
