@@ -15,20 +15,27 @@ DEF PROC_main
   PlayerVelocity%=0
   PlayerShields%=100
   PlayerStructuralIntegrity%=100
+
   DIM PlayerHitbox%(3)
   PlayerHitbox%() = 0,0,60,81
+
+  DIM EnemyHitbox%(0,3)
+  EnemyHitbox%() = 0,0,48,74
+
   XMovePerCent%=5
   ResetShipSprite% = 0
 
   MaxEnemies% = 4
   DIM EnemyLocations%(MaxEnemies% - 1,1)
-  DIM EnemySprites$(MaxEnemies% -1)
+  DIM EnemySprites$(MaxEnemies% - 1)
+  DIM EnemyHitboxID%(MaxEnemies% - 1)
 
   REM Random it up for now
   FOR Enemy%=0 TO MaxEnemies% - 1
     EnemyLocations%(Enemy%,0) = RND(SCREENGFXWIDTH%)
     EnemyLocations%(Enemy%,1) = SCREENGFXHEIGHT% + (RND(SCREENGFXHEIGHT%/2) * (Enemy% + 1))
     EnemySprites$(Enemy%) = "durno_ship"
+    EnemyHitboxID%(Enemy%) = 0
   NEXT Enemy%
 
   REM Show/hide debug display
@@ -158,7 +165,7 @@ DEF PROCinputs
      ENDIF
   ENDIF
   IF INKEY(-17) THEN
-      IF DebugOut% = 1 THEN DebugOut% = 0 ELSE DebugOut% = 1
+      IF DebugOut% = 0 THEN DebugOut% = 1
   ENDIF
 ENDPROC
 
@@ -170,6 +177,11 @@ DEF PROCdebugoutput
 
   FOR Enemy%=0 TO MaxEnemies% - 1
     PRINT "ENEMY:" STR$(Enemy%) + " " + STR$(EnemyLocations%(Enemy%,0)) + "," + STR$(EnemyLocations%(Enemy%,1))
+  NEXT Enemy%
+
+
+  FOR Enemy%=0 TO MaxEnemies% - 1
+    RECT EnemyLocations%(Enemy%,0) + EnemyHitbox%(EnemyHitboxID%(Enemy%),0), EnemyLocations%(Enemy%,1) + EnemyHitbox%(EnemyHitboxID%(Enemy%),1), EnemyHitbox%(EnemyHitboxID%(Enemy%),2), EnemyHitbox%(EnemyHitboxID%(Enemy%),3)
   NEXT Enemy%
 
   RECT PlayerLocation%(0) + PlayerHitbox%(0), PlayerLocation%(1) + PlayerHitbox%(1), PlayerHitbox%(2), PlayerHitbox%(3)
