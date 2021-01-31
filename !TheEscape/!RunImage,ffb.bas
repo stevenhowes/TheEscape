@@ -68,59 +68,22 @@ DEF PROC_main
 
     CLS
 
-    REM Space dust / stars
-    FOR Spec%=0 TO 49
-      GCOL 0,0
-      LINE SpecLocations%(0,Spec%),SpecLocations%(1,Spec%),SpecLocations%(0,Spec%),SpecLocations%(1,Spec%)
-      SpecLocations%(1,Spec%) = SpecLocations%(1,Spec%) - ((Cents% - LastCents%) * PlayerVelocity%/10)
-      IF SpecLocations%(1,Spec%) < 0 THEN
-        SpecLocations%(1,Spec%) = SCREENGFXHEIGHT%
-        SpecLocations%(0,Spec%) = RND(SCREENGFXWIDTH%)
-      ENDIF
-    NEXT Spec%
-
-    REM Draw LCARS in top left
-    PROCdraw_sprite("lcars",4,SCREENGFXHEIGHT%-180)
-
-    REM If using l/r sprites we debounce to stop it looking twitchy
-    IF Cents% > ResetShipSprite% THEN
-      ShipSprite$ = "player_ship"
-    ENDIF
-
-    REM Handle Key inputs
+    REM Controls
     PROCinputs
 
-    REM Attribute names
-    GCOL 0,0
-    MOVE 75,1150
-    PRINT "Sheilds"
-    MOVE 75,1120
-    PRINT "Integrity"
-    MOVE 75,1090
-    PRINT "Velocity"
+    REM Environment
+    PROCspacedust_draw
 
-    REM Attribute values
-    GCOL 0,7
-    MOVE 130,1150
-    PRINT PlayerShields%
-    MOVE 130,1120
-    PRINT PlayerStructuralIntegrity%
-    MOVE 130,1090
-    PRINT PlayerVelocity%
+    REM NPCs
+    PROCenemy_ship_move
+    PROCenemy_ship_collide
+    PROCenemy_ship_draw
 
-    REM Draw player ship
-    PROCdraw_sprite(ShipSprite$,PlayerLocation%(0),PlayerLocation%(1))
+    REM Player
+    PROCplayer_ship_draw
 
-
-    REM TODO: Only uses player velocity currently (/2 so they don't match stars)
-    FOR Enemy%=0 TO MaxEnemies% - 1
-      EnemyLocations%(Enemy%,1) = EnemyLocations%(Enemy%,1) - ((Cents% - LastCents%) * PlayerVelocity%/20)
-      IF EnemyLocations%(Enemy%,1) < 0 THEN
-        EnemyLocations%(Enemy%,1) = SCREENGFXHEIGHT% + RND(SCREENGFXHEIGHT%)
-        EnemyLocations%(Enemy%,0) = RND(SCREENGFXWIDTH%)
-      ENDIF
-      PROCdraw_sprite(EnemySprites$(Enemy%),EnemyLocations%(Enemy%,0),EnemyLocations%(Enemy%,1))
-    NEXT Enemy%
+    REM UI
+    PROChud_draw
 
     IF DebugOut% = 1 THEN
       PROCdebugoutput
@@ -137,6 +100,76 @@ DEF PROC_main
 
   UNTIL FALSE
 
+ENDPROC
+
+DEF PROCspacedust_draw
+  REM Space dust / stars
+  FOR Spec%=0 TO 49
+    GCOL 0,0
+    LINE SpecLocations%(0,Spec%),SpecLocations%(1,Spec%),SpecLocations%(0,Spec%),SpecLocations%(1,Spec%)
+    SpecLocations%(1,Spec%) = SpecLocations%(1,Spec%) - ((Cents% - LastCents%) * PlayerVelocity%/10)
+    IF SpecLocations%(1,Spec%) < 0 THEN
+      SpecLocations%(1,Spec%) = SCREENGFXHEIGHT%
+      SpecLocations%(0,Spec%) = RND(SCREENGFXWIDTH%)
+    ENDIF
+  NEXT Spec%
+ENDPROC
+
+REM Move enemy ship (display and physical)
+DEF PROCenemy_ship_move
+  REM TODO: Only uses player velocity currently (/2 so they don't match stars)
+  FOR Enemy%=0 TO MaxEnemies% - 1
+    EnemyLocations%(Enemy%,1) = EnemyLocations%(Enemy%,1) - ((Cents% - LastCents%) * PlayerVelocity%/20)
+    IF EnemyLocations%(Enemy%,1) < 0 THEN
+      EnemyLocations%(Enemy%,1) = SCREENGFXHEIGHT% + RND(SCREENGFXHEIGHT%)
+      EnemyLocations%(Enemy%,0) = RND(SCREENGFXWIDTH%)
+    ENDIF
+  NEXT Enemy%
+ENDPROC
+
+REM Hud drawing (sprites and real-time)
+DEF PROChud_draw
+  REM Draw LCARS in top left
+  PROCdraw_sprite("lcars",4,SCREENGFXHEIGHT%-180)
+
+  REM Attribute names
+  GCOL 0,0
+  MOVE 75,1150
+  PRINT "Sheilds"
+  MOVE 75,1120
+  PRINT "Integrity"
+  MOVE 75,1090
+  PRINT "Velocity"
+
+  REM Attribute values
+  GCOL 0,7
+  MOVE 130,1150
+  PRINT PlayerShields%
+  MOVE 130,1120
+  PRINT PlayerStructuralIntegrity%
+  MOVE 130,1090
+  PRINT PlayerVelocity%
+ENDPROC
+
+REM Handle enemy collisions with anything
+DEF PROCenemy_ship_collide
+ENDPROC
+
+REM Draw enemy ships
+DEFPROCenemy_ship_draw
+  REM TODO: Only uses player velocity currently (/2 so they don't match stars)
+  FOR Enemy%=0 TO MaxEnemies% - 1
+    PROCdraw_sprite(EnemySprites$(Enemy%),EnemyLocations%(Enemy%,0),EnemyLocations%(Enemy%,1))
+  NEXT Enemy%
+ENDPROC
+
+REM Draw player ship
+DEF PROCplayer_ship_draw
+  REM If using l/r sprites we debounce to stop it looking twitchy
+  IF Cents% > ResetShipSprite% THEN
+    ShipSprite$ = "player_ship"
+  ENDIF
+  PROCdraw_sprite(ShipSprite$,PlayerLocation%(0),PlayerLocation%(1))
 ENDPROC
 
 REM Input handling
