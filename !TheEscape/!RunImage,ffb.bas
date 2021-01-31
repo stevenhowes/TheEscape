@@ -20,6 +20,17 @@ DEF PROC_main
   XMovePerCent%=5
   ResetShipSprite% = 0
 
+  MaxEnemies% = 4
+  DIM EnemyLocations%(MaxEnemies% - 1,1)
+  DIM EnemySprites$(MaxEnemies% -1)
+
+  REM Random it up for now
+  FOR Enemy%=0 TO MaxEnemies% - 1
+    EnemyLocations%(Enemy%,0) = RND(SCREENGFXWIDTH%)
+    EnemyLocations%(Enemy%,1) = SCREENGFXHEIGHT% + (RND(SCREENGFXHEIGHT%/2) * (Enemy% + 1))
+    EnemySprites$(Enemy%) = "durno_ship"
+  NEXT Enemy%
+
   REM Show/hide debug display
   DebugOut%=0
 
@@ -93,6 +104,17 @@ DEF PROC_main
     REM Draw player ship
     PROCdraw_sprite(ShipSprite$,PlayerLocation%(0),PlayerLocation%(1))
 
+
+    REM TODO: Only uses player velocity currently (/2 so they don't match stars)
+    FOR Enemy%=0 TO MaxEnemies% - 1
+      EnemyLocations%(Enemy%,1) = EnemyLocations%(Enemy%,1) - ((Cents% - LastCents%) * PlayerVelocity%/20)
+      IF EnemyLocations%(Enemy%,1) < 0 THEN
+        EnemyLocations%(Enemy%,1) = SCREENGFXHEIGHT% + RND(SCREENGFXHEIGHT%)
+        EnemyLocations%(Enemy%,0) = RND(SCREENGFXWIDTH%)
+      ENDIF
+      PROCdraw_sprite(EnemySprites$(Enemy%),EnemyLocations%(Enemy%,0),EnemyLocations%(Enemy%,1))
+    NEXT Enemy%
+
     IF DebugOut% = 1 THEN
       PROCdebugoutput
     ENDIF
@@ -145,6 +167,11 @@ DEF PROCdebugoutput
   MOVE 0,500
   PRINT "X:   " + STR$(PlayerLocation%(0)) " Y: " STR$(PlayerLocation%(1))
   PRINT "CPF: " + STR$(Cents% - LastCents%)
+
+  FOR Enemy%=0 TO MaxEnemies% - 1
+    PRINT "ENEMY:" STR$(Enemy%) + " " + STR$(EnemyLocations%(Enemy%,0)) + "," + STR$(EnemyLocations%(Enemy%,1))
+  NEXT Enemy%
+
   RECT PlayerLocation%(0) + PlayerHitbox%(0), PlayerLocation%(1) + PlayerHitbox%(1), PlayerHitbox%(2), PlayerHitbox%(3)
 ENDPROC
 
