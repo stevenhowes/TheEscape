@@ -153,7 +153,47 @@ ENDPROC
 
 REM Handle enemy collisions with anything
 DEF PROCenemy_ship_collide
+  FOR Enemy%=0 TO MaxEnemies% - 1
+
+    REM This is our hitbox
+    x1 = EnemyLocations%(Enemy%,0) + EnemyHitbox%(EnemyHitboxID%(Enemy%),0)
+    y1 = EnemyLocations%(Enemy%,1) + EnemyHitbox%(EnemyHitboxID%(Enemy%),1)
+    w1 = EnemyHitbox%(EnemyHitboxID%(Enemy%),2)
+    h1 = EnemyHitbox%(EnemyHitboxID%(Enemy%),3)
+
+    REM TODO: Collision with another enemy
+
+    REM Collision with a player
+    x2 = PlayerLocation%(0) + PlayerHitbox%(0)
+    y2 = PlayerLocation%(1) + PlayerHitbox%(1)
+    w2 = PlayerHitbox%(2)
+    h2 = PlayerHitbox%(3)
+    IF FNcollide(x1, y1, w1, h1, x2, y2, w2, h2) = 1 THEN
+      MOVE x1+w1,y1+h1
+      PlayerVelocity% = 0
+      PRINT "BOOM"
+      IF DebugOut% = 1 THEN
+       PRINT " hits player"
+      ENDIF
+    ENDIF
+
+    REM TODO: Collision with projectile
+
+  NEXT Enemy%
 ENDPROC
+
+DEF FNcollide(x1,y1,w1,h1,x2,y2,w2,h2)
+  collide% = 0
+    IF (x1 + w1) >= x2 THEN
+      IF x1 <= (x2 + w2) THEN
+        IF (y1 + h1) >= y2 THEN
+          IF y1 <= (y2 + h2) THEN
+            collide% = 1
+          ENDIF
+        ENDIF
+      ENDIF
+    ENDIF
+=collide%
 
 REM Draw enemy ships
 DEFPROCenemy_ship_draw
