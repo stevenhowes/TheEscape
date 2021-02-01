@@ -25,17 +25,20 @@ DEF PROC_main
   XMovePerCent%=5
   ResetShipSprite% = 0
 
-  MaxEnemies% = 1
+  MaxEnemies% = 10
   DIM EnemyLocations%(MaxEnemies% - 1,1)
   DIM EnemySprites$(MaxEnemies% - 1)
   DIM EnemyHitboxID%(MaxEnemies% - 1)
+  DIM EnemyVelocityX%(MaxEnemies% - 1)
+  DIM EnemyVelocityY%(MaxEnemies% - 1)
 
   REM Random it up for now
   FOR Enemy%=0 TO MaxEnemies% - 1
     EnemyLocations%(Enemy%,0) = RND(SCREENGFXWIDTH%)
     EnemyLocations%(Enemy%,1) = SCREENGFXHEIGHT% + (RND(SCREENGFXHEIGHT%/2) * (Enemy% + 1))
     EnemySprites$(Enemy%) = "durno_ship"
-    EnemyHitboxID%(Enemy%) = 0
+    EnemyVelocityX%(Enemy%) = RND(10) - 5
+    EnemyVelocityY%(Enemy%) = RND(5) + 5
   NEXT Enemy%
 
   REM Show/hide debug display
@@ -63,15 +66,13 @@ DEF PROC_main
     LastCents% = Cents%
     Cents% = TIME
 
-
-
     REM Controls
     PROCinputs
 
     REM NPCs
     PROCenemy_ship_move
     PROCenemy_ship_collide_player
-    REMPROCenemy_ship_collide_npc
+    PROCenemy_ship_collide_npc
 
     REM Still not sure about this bollocks, but it does seem to work now
     SYS "OS_Byte",19
@@ -119,7 +120,10 @@ REM Move enemy ship (display and physical)
 DEF PROCenemy_ship_move
   REM TODO: Only uses player velocity currently (/2 so they don't match stars)
   FOR Enemy%=0 TO MaxEnemies% - 1
-    EnemyLocations%(Enemy%,1) = EnemyLocations%(Enemy%,1) - ((Cents% - LastCents%) * PlayerVelocity%/20)
+    EnemyLocations%(Enemy%,1) = EnemyLocations%(Enemy%,1) - ((Cents% - LastCents%) * PlayerVelocity%/20) - ((Cents% - LastCents%) * EnemyVelocityY%(Enemy%))
+
+    EnemyLocations%(Enemy%,0) = EnemyLocations%(Enemy%,0) - ((Cents% - LastCents%) * EnemyVelocityX%(Enemy%))
+
     IF EnemyLocations%(Enemy%,1) <= 0 THEN
       EnemyLocations%(Enemy%,1) = SCREENGFXHEIGHT% + RND(SCREENGFXHEIGHT%)
       EnemyLocations%(Enemy%,0) = RND(SCREENGFXWIDTH%)
@@ -163,14 +167,14 @@ DEF PROCenemy_ship_collide_npc
 
     FOR OtherEnemy%=0 TO MaxEnemies% - 1
       REM Collision with an enemy
-      x2 = EnemyLocations%(OtherEnemy%,0) + EnemyHitbox%(EnemyHitboxID%(OtherEnemy%),0)
-      y2 = EnemyLocations%(OtherEnemy%,1) + EnemyHitbox%(EnemyHitboxID%(OtherEnemy%),1)
-      w2 = EnemyHitbox%(EnemyHitboxID%(OtherEnemy%),2)
-      h2 = EnemyHitbox%(EnemyHitboxID%(OtherEnemy%),3)
-      IF FNcollide(x1, y1, w1, h1, x2, y2, w2, h2) = 1 THEN
-        CollidesWith% = OtherEnemy%
-        MOVE x2+h2,y2+w2
-        IF Enemy% > OtherEnemy% THEN
+      IF Enemy% > OtherEnemy% THEN
+        x2 = EnemyLocations%(OtherEnemy%,0) + EnemyHitbox%(EnemyHitboxID%(OtherEnemy%),0)
+        y2 = EnemyLocations%(OtherEnemy%,1) + EnemyHitbox%(EnemyHitboxID%(OtherEnemy%),1)
+        w2 = EnemyHitbox%(EnemyHitboxID%(OtherEnemy%),2)
+        h2 = EnemyHitbox%(EnemyHitboxID%(OtherEnemy%),3)
+        IF FNcollide(x1, y1, w1, h1, x2, y2, w2, h2) = 1 THEN
+          CollidesWith% = OtherEnemy%
+          MOVE x2+h2,y2+w2
           PRINT STR$(CollidesWith%) + " hits " + STR$(Enemy%)
         ENDIF
       ENDIF
@@ -272,7 +276,7 @@ DEF PROCdebugoutput
   PRINT "Scr: " + STR$(Scr%)
 
   FOR Enemy%=0 TO MaxEnemies% - 1
-    PRINT "ENEMY:" STR$(Enemy%) + " " + STR$(EnemyLocations%(Enemy%,0)) + "," + STR$(EnemyLocations%(Enemy%,1))
+    PRINT "ENEMY:" STR$(Enemy%) + " " + STR$(EnemyLocations%(Enemy%,0)) + "," + STR$(EnemyLocations%(Enemy%,1)) + " " + STR$(EnemyVelocityX%(Enemy%)) + " " + STR$(EnemyVelocityY%(Enemy%))
   NEXT Enemy%
 
 
@@ -290,7 +294,7 @@ ENDPROC
 
 REM Shorthand for sprite drawing SWI
 DEF PROCdraw_sprite(name$,x%,y%)
-  SYS "OS_SpriteOp",34+256,sprite_area%,name$,x%,y%,0
+  SYS "OS_SpriteOp",34+256,sprite_area%,name$,x%,y%,8
 ENDPROC
 
 REM Loads sprite file - stolen off a forum somewhere
