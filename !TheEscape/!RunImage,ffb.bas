@@ -7,7 +7,7 @@ END
 
 DEF PROC_main
   REM Current graphics buffer
-  DIM Scr% 0
+  Scr% = 1
 
   DIM PlayerLocation%(1)
   PlayerLocation%(0) = SCREENGFXWIDTH%/2
@@ -20,12 +20,12 @@ DEF PROC_main
   PlayerHitbox%() = 0,0,60,81
 
   DIM EnemyHitbox%(0,3)
-  EnemyHitbox%() = 0,0,148,74
+  EnemyHitbox%() = 0,0,48,74
 
   XMovePerCent%=5
   ResetShipSprite% = 0
 
-  MaxEnemies% = 4
+  MaxEnemies% = 1
   DIM EnemyLocations%(MaxEnemies% - 1,1)
   DIM EnemySprites$(MaxEnemies% - 1)
   DIM EnemyHitboxID%(MaxEnemies% - 1)
@@ -63,24 +63,33 @@ DEF PROC_main
     LastCents% = Cents%
     Cents% = TIME
 
-    REM Set grpahics buffer to one that's not in use
-    SYS "OS_Byte",112,Scr%
 
-    CLS
 
     REM Controls
     PROCinputs
 
+    REM NPCs
+    PROCenemy_ship_move
+    PROCenemy_ship_collide_player
+    REMPROCenemy_ship_collide_npc
+
+    REM Still not sure about this bollocks, but it does seem to work now
+    SYS "OS_Byte",19
+    SYS "OS_Byte",114,1
+    SYS "OS_Byte",113,Scr%
+    Scr% = Scr% + 1
+    IF Scr% > 3 THEN Scr% = 1
+    SYS "OS_Byte",112,Scr%
+
+    CLS
+
     REM Environment
     PROCspacedust_draw
 
-    REM NPCs
-    PROCenemy_ship_move
-    PROCenemy_ship_collide
-    PROCenemy_ship_draw
-
     REM Player
     PROCplayer_ship_draw
+
+    PROCenemy_ship_draw
 
     REM UI
     PROChud_draw
@@ -88,15 +97,6 @@ DEF PROC_main
     IF DebugOut% = 1 THEN
       PROCdebugoutput
     ENDIF
-
-    REM Wait for rendering to complete
-    WAIT
-
-    REM Display edited buffer
-    SYS "OS_Byte",113,Scr%
-
-    REM Switch draw buffer
-    IF Scr%=0 THEN Scr%=1 ELSE Scr%=0
 
   UNTIL FALSE
 
@@ -106,7 +106,7 @@ DEF PROCspacedust_draw
   REM Space dust / stars
   FOR Spec%=0 TO 49
     GCOL 0,0
-    LINE SpecLocations%(0,Spec%),SpecLocations%(1,Spec%),SpecLocations%(0,Spec%),SpecLocations%(1,Spec%)
+    LINE SpecLocations%(0,Spec%),SpecLocations%(1,Spec%),SpecLocations%(0,Spec%),(PlayerVelocity% / 3) + SpecLocations%(1,Spec%)
     SpecLocations%(1,Spec%) = SpecLocations%(1,Spec%) - ((Cents% - LastCents%) * PlayerVelocity%/10)
     IF SpecLocations%(1,Spec%) < 0 THEN
       SpecLocations%(1,Spec%) = SCREENGFXHEIGHT%
@@ -151,8 +151,35 @@ DEF PROChud_draw
   PRINT PlayerVelocity%
 ENDPROC
 
+DEF PROCenemy_ship_collide_npc
+  FOR Enemy%=0 TO MaxEnemies% - 1
+   CollidesWith% = Enemy%
+
+    REM This is our hitbox
+    x1 = EnemyLocations%(Enemy%,0) + EnemyHitbox%(EnemyHitboxID%(Enemy%),0)
+    y1 = EnemyLocations%(Enemy%,1) + EnemyHitbox%(EnemyHitboxID%(Enemy%),1)
+    w1 = EnemyHitbox%(EnemyHitboxID%(Enemy%),2)
+    h1 = EnemyHitbox%(EnemyHitboxID%(Enemy%),3)
+
+    FOR OtherEnemy%=0 TO MaxEnemies% - 1
+      REM Collision with an enemy
+      x2 = EnemyLocations%(OtherEnemy%,0) + EnemyHitbox%(EnemyHitboxID%(OtherEnemy%),0)
+      y2 = EnemyLocations%(OtherEnemy%,1) + EnemyHitbox%(EnemyHitboxID%(OtherEnemy%),1)
+      w2 = EnemyHitbox%(EnemyHitboxID%(OtherEnemy%),2)
+      h2 = EnemyHitbox%(EnemyHitboxID%(OtherEnemy%),3)
+      IF FNcollide(x1, y1, w1, h1, x2, y2, w2, h2) = 1 THEN
+        CollidesWith% = OtherEnemy%
+        MOVE x2+h2,y2+w2
+        IF Enemy% > OtherEnemy% THEN
+          PRINT STR$(CollidesWith%) + " hits " + STR$(Enemy%)
+        ENDIF
+      ENDIF
+    NEXT OtherEnemy%
+  NEXT Enemy%
+ENDPROC
+
 REM Handle enemy collisions with anything
-DEF PROCenemy_ship_collide
+DEF PROCenemy_ship_collide_player
   FOR Enemy%=0 TO MaxEnemies% - 1
 
     REM This is our hitbox
@@ -174,28 +201,6 @@ DEF PROCenemy_ship_collide
       REM  PRINT " hits player"
       REM ENDIF
     ENDIF
-
-    CollidesWith% = Enemy%
-
-    FOR OtherEnemy%=0 TO MaxEnemies% - 1
-      REM Collision with an enemy
-      x2 = EnemyLocations%(OtherEnemy%,0) + EnemyHitbox%(EnemyHitboxID%(OtherEnemy%),0)
-      y2 = EnemyLocations%(OtherEnemy%,1) + EnemyHitbox%(EnemyHitboxID%(OtherEnemy%),1)
-      w2 = EnemyHitbox%(EnemyHitboxID%(OtherEnemy%),2)
-      h2 = EnemyHitbox%(EnemyHitboxID%(OtherEnemy%),3)
-      IF FNcollide(x1, y1, w1, h1, x2, y2, w2, h2) = 1 THEN
-        CollidesWith% = OtherEnemy%
-      ENDIF
-    NEXT OtherEnemy%
-
-    REM Breaker
-    REM Breaker
-
-    IF 1 = 1 THEN
-    PRINT "1"
-    PRINT "1"
-    ENDIF
-
   NEXT Enemy%
 ENDPROC
 
@@ -264,6 +269,7 @@ DEF PROCdebugoutput
   MOVE 0,500
   PRINT "X:   " + STR$(PlayerLocation%(0)) " Y: " STR$(PlayerLocation%(1))
   PRINT "CPF: " + STR$(Cents% - LastCents%)
+  PRINT "Scr: " + STR$(Scr%)
 
   FOR Enemy%=0 TO MaxEnemies% - 1
     PRINT "ENEMY:" STR$(Enemy%) + " " + STR$(EnemyLocations%(Enemy%,0)) + "," + STR$(EnemyLocations%(Enemy%,1))
