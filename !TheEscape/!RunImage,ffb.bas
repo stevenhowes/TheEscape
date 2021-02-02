@@ -20,13 +20,16 @@ DEF PROC_main
 
   DIM PlayerLocation%(1)
   PlayerLocation%(X) = SCREENGFXWIDTH%/2
-  PlayerLocation%(Y) = SCREENGFXHEIGHT%/6
+  PlayerLocation%(Y) = SCREENGFXHEIGHT%/30
   PlayerVelocity%=0
   PlayerShields%=100
   PlayerStructuralIntegrity%=100
 
   DIM PlayerHitbox%(3)
   PlayerHitbox%() = 0,0,60,81
+
+  LeftID% = -1
+  RightID% = -1
 
   DIM EnemyHitbox%(1,3)
   EnemyHitbox%(0,0) = 0
@@ -52,12 +55,12 @@ DEF PROC_main
     EnemyLocations%(Enemy%,X) = RND(SCREENGFXWIDTH%)
     EnemyLocations%(Enemy%,Y) = SCREENGFXHEIGHT% + (RND(SCREENGFXHEIGHT%/2) * (Enemy% + 1))
     EnemySprites$(Enemy%) = "durno_ship"
-    EnemyVelocity%(Enemy%,X) = RND(6) - 3
-    EnemyVelocity%(Enemy%,Y) = RND(3) + 3
+    EnemyVelocity%(Enemy%,X) = 0
+    EnemyVelocity%(Enemy%,Y) = RND(3) + 2
     EnemyHitboxID%(Enemy%) = RND(2)-1
     IF EnemyHitboxID%(Enemy%) = 1 THEN
       EnemySprites$(Enemy%) = "durno_ship2"
-    EnemyVelocity%(Enemy%,X) = RND(8) - 4
+    EnemyVelocity%(Enemy%,X) = RND(3) - 2
     EnemyVelocity%(Enemy%,Y) = RND(10) + 6
     ENDIF
 
@@ -111,6 +114,7 @@ DEF PROC_main
 
     REM Player
     PROCplayer_ship_draw
+    PROCplayer_arc_calculatetarget
 
     PROCenemy_ship_draw
 
@@ -260,6 +264,46 @@ DEF PROCplayer_ship_draw
   PROCdraw_sprite(ShipSprite$,PlayerLocation%(0),PlayerLocation%(1))
 ENDPROC
 
+
+REM Calculate player ship's phaser arc
+DEF PROCplayer_arc_calculatetarget
+GCOL 0,0
+NoseX% = PlayerLocation%(X) + PlayerHitbox%(0) + (PlayerHitbox%(2)/2)
+NoseY% = (PlayerLocation%(Y) + PlayerHitbox%(1) + PlayerHitbox%(3))
+REM LINE NoseX%, NoseY%, NoseX% + 200,NoseY% + 1000
+REM LINE NoseX%, NoseY%, NoseX%,NoseY% + 1000
+REM LINE NoseX%, NoseY%, NoseX% - 200,NoseY% + 1000
+
+LeftDistance% = 1000
+LeftID% = -1
+RightDistance% = 1000
+RightID% = -1
+
+FOR Enemy%=0 TO MaxEnemies% - 1
+    LeftCornerX% = EnemyLocations%(Enemy%,X) + EnemyHitbox%(EnemyHitboxID%(Enemy%),X)
+    LeftCornerY% = EnemyLocations%(Enemy%,1) + EnemyHitbox%(EnemyHitboxID%(Enemy%),1)
+    RightCornerX% = LeftCornerX% + EnemyHitbox%(EnemyHitboxID%(Enemy%),2)
+    IF LeftCornerY% > NoseY% THEN
+      DistanceY% = LeftCornerY% - NoseY%
+      DistanceX% = ABS(NoseX% - ((LeftCornerX% + RightCornerX%) / 2))
+      IF (DistanceY%/5) > DistanceX% THEN
+        IF (NoseX% - ((LeftCornerX% + RightCornerX%) / 2)) > 0 THEN
+          IF DistanceY% < LeftDistance% THEN
+            LeftDistance% = DistanceY%
+            LeftID% = Enemy%
+          ENDIF
+        ELSE
+          IF DistanceY% < RightDistance% THEN
+            RightDistance% = DistanceY%
+            RightID% = Enemy%
+          ENDIF
+        ENDIF
+      ENDIF
+    ENDIF
+NEXT Enemy%
+
+ENDPROC
+
 REM Input handling
 DEF PROCinputs
   *FX 4
@@ -296,6 +340,8 @@ DEF PROCdebugoutput
   PRINT "X:   " + STR$(PlayerLocation%(0)) " Y: " STR$(PlayerLocation%(1))
   PRINT "CPF: " + STR$(Cents% - LastCents%)
   PRINT "Scr: " + STR$(Scr%)
+  PRINT "Left: " + STR$(LeftID%)
+  PRINT "Right: " + STR$(RightID%)
 
   FOR Enemy%=0 TO MaxEnemies% - 1
     PRINT "ENEMY:" STR$(Enemy%) + " " + STR$(EnemyLocations%(Enemy%,X)) + "," + STR$(EnemyLocations%(Enemy%,Y)) + " " + STR$(EnemyVelocity%(Enemy%,X)) + " " + STR$(EnemyVelocity%(Enemy%,Y))
@@ -307,6 +353,14 @@ DEF PROCdebugoutput
   NEXT Enemy%
 
   RECT PlayerLocation%(X) + PlayerHitbox%(0), PlayerLocation%(Y) + PlayerHitbox%(1), PlayerHitbox%(2), PlayerHitbox%(3)
+
+  IF LeftID% >= 0 THEN
+    LINE PlayerLocation%(X), PlayerLocation%(Y), EnemyLocations%(LeftID%,X), EnemyLocations%(LeftID%,Y)
+  ENDIF
+
+  IF RightID% >= 0 THEN
+    LINE PlayerLocation%(X), PlayerLocation%(Y), EnemyLocations%(RightID%,X), EnemyLocations%(RightID%,Y)
+  ENDIF
 ENDPROC
 
 REM Delay routine - thanks Sophie
