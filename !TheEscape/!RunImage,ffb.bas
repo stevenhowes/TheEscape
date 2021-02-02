@@ -8,6 +8,9 @@ IF INKEY(-42) THEN
   SCREENGFXHEIGHT%=960
 ENDIF
 
+X = 0
+Y = 1
+
 PROC_main
 END
 
@@ -16,8 +19,8 @@ DEF PROC_main
   Scr% = 1
 
   DIM PlayerLocation%(1)
-  PlayerLocation%(0) = SCREENGFXWIDTH%/2
-  PlayerLocation%(1) = SCREENGFXHEIGHT%/6
+  PlayerLocation%(X) = SCREENGFXWIDTH%/2
+  PlayerLocation%(Y) = SCREENGFXHEIGHT%/6
   PlayerVelocity%=0
   PlayerShields%=100
   PlayerStructuralIntegrity%=100
@@ -35,26 +38,25 @@ DEF PROC_main
   DIM EnemyLocations%(MaxEnemies% - 1,1)
   DIM EnemySprites$(MaxEnemies% - 1)
   DIM EnemyHitboxID%(MaxEnemies% - 1)
-  DIM EnemyVelocityX%(MaxEnemies% - 1)
-  DIM EnemyVelocityY%(MaxEnemies% - 1)
+  DIM EnemyVelocity%(MaxEnemies% - 1,1)
 
   REM Random it up for now
   FOR Enemy%=0 TO MaxEnemies% - 1
-    EnemyLocations%(Enemy%,0) = RND(SCREENGFXWIDTH%)
-    EnemyLocations%(Enemy%,1) = SCREENGFXHEIGHT% + (RND(SCREENGFXHEIGHT%/2) * (Enemy% + 1))
+    EnemyLocations%(Enemy%,X) = RND(SCREENGFXWIDTH%)
+    EnemyLocations%(Enemy%,Y) = SCREENGFXHEIGHT% + (RND(SCREENGFXHEIGHT%/2) * (Enemy% + 1))
     EnemySprites$(Enemy%) = "durno_ship"
-    EnemyVelocityX%(Enemy%) = RND(10) - 5
-    EnemyVelocityY%(Enemy%) = RND(5) + 5
+    EnemyVelocity%(Enemy%,X) = RND(10) - 5
+    EnemyVelocity%(Enemy%,Y) = RND(5) + 5
   NEXT Enemy%
 
   REM Show/hide debug display
   DebugOut%=0
 
-  DIM SpecLocations%(1,49)
-  FOR Spec%=0 TO 49
-    SpecLocations%(0,Spec%) = RND(SCREENGFXWIDTH%)
-    SpecLocations%(1,Spec%) = RND(SCREENGFXHEIGHT%)
-  NEXT Spec%
+  DIM SpeckLocations%(49,1)
+  FOR Speck%=0 TO 49
+    SpeckLocations%(Speck%,X) = RND(SCREENGFXWIDTH%)
+    SpeckLocations%(Speck%,Y) = RND(SCREENGFXHEIGHT%)
+  NEXT Speck%
 
   REM Used for centiseconds per frame calcs
   Cents% = TIME
@@ -91,7 +93,7 @@ DEF PROC_main
     CLS
 
     REM Environment
-    PROCspacedust_draw
+    PROCspecks_draw
 
     REM Player
     PROCplayer_ship_draw
@@ -109,30 +111,30 @@ DEF PROC_main
 
 ENDPROC
 
-DEF PROCspacedust_draw
-  REM Space dust / stars
-  FOR Spec%=0 TO 49
+DEF PROCspecks_draw
+  REM Specks / stars
+  FOR Speck%=0 TO 49
     GCOL 0,0
-    LINE SpecLocations%(0,Spec%),SpecLocations%(1,Spec%),SpecLocations%(0,Spec%),(PlayerVelocity% / 3) + SpecLocations%(1,Spec%)
-    SpecLocations%(1,Spec%) = SpecLocations%(1,Spec%) - ((Cents% - LastCents%) * PlayerVelocity%/10)
-    IF SpecLocations%(1,Spec%) < 0 THEN
-      SpecLocations%(1,Spec%) = SCREENGFXHEIGHT%
-      SpecLocations%(0,Spec%) = RND(SCREENGFXWIDTH%)
+    LINE SpeckLocations%(Speck%,X),SpeckLocations%(Speck%,Y),SpeckLocations%(Speck%,X),(PlayerVelocity% / 3) + SpeckLocations%(Speck%,Y)
+    SpeckLocations%(Speck%,Y) = SpeckLocations%(Speck%,Y) - ((Cents% - LastCents%) * PlayerVelocity%/10)
+    IF SpeckLocations%(Speck%,Y) < 0 THEN
+      SpeckLocations%(Speck%,Y) = SCREENGFXHEIGHT%
+      SpeckLocations%(Speck%,X) = RND(SCREENGFXWIDTH%)
     ENDIF
-  NEXT Spec%
+  NEXT Speck%
 ENDPROC
 
 REM Move enemy ship (display and physical)
 DEF PROCenemy_ship_move
   REM TODO: Only uses player velocity currently (/2 so they don't match stars)
   FOR Enemy%=0 TO MaxEnemies% - 1
-    EnemyLocations%(Enemy%,1) = EnemyLocations%(Enemy%,1) - ((Cents% - LastCents%) * PlayerVelocity%/20) - ((Cents% - LastCents%) * EnemyVelocityY%(Enemy%))
+    EnemyLocations%(Enemy%,Y) = EnemyLocations%(Enemy%,Y) - ((Cents% - LastCents%) * PlayerVelocity%/20) - ((Cents% - LastCents%) * EnemyVelocity%(Enemy%,Y))
 
-    EnemyLocations%(Enemy%,0) = EnemyLocations%(Enemy%,0) - ((Cents% - LastCents%) * EnemyVelocityX%(Enemy%))
+    EnemyLocations%(Enemy%,X) = EnemyLocations%(Enemy%,X) - ((Cents% - LastCents%) * EnemyVelocity%(Enemy%,X))
 
-    IF EnemyLocations%(Enemy%,1) <= 0 THEN
-      EnemyLocations%(Enemy%,1) = SCREENGFXHEIGHT% + RND(SCREENGFXHEIGHT%)
-      EnemyLocations%(Enemy%,0) = RND(SCREENGFXWIDTH%)
+    IF EnemyLocations%(Enemy%,Y) <= 0 THEN
+      EnemyLocations%(Enemy%,Y) = SCREENGFXHEIGHT% + RND(SCREENGFXHEIGHT%)
+      EnemyLocations%(Enemy%,X) = RND(SCREENGFXWIDTH%)
     ENDIF
   NEXT Enemy%
 ENDPROC
@@ -166,16 +168,16 @@ DEF PROCenemy_ship_collide_npc
    CollidesWith% = Enemy%
 
     REM This is our hitbox
-    x1 = EnemyLocations%(Enemy%,0) + EnemyHitbox%(EnemyHitboxID%(Enemy%),0)
-    y1 = EnemyLocations%(Enemy%,1) + EnemyHitbox%(EnemyHitboxID%(Enemy%),1)
+    x1 = EnemyLocations%(Enemy%,X) + EnemyHitbox%(EnemyHitboxID%(Enemy%),0)
+    y1 = EnemyLocations%(Enemy%,Y) + EnemyHitbox%(EnemyHitboxID%(Enemy%),1)
     w1 = EnemyHitbox%(EnemyHitboxID%(Enemy%),2)
     h1 = EnemyHitbox%(EnemyHitboxID%(Enemy%),3)
 
     FOR OtherEnemy%=0 TO MaxEnemies% - 1
       REM Collision with an enemy
       IF Enemy% > OtherEnemy% THEN
-        x2 = EnemyLocations%(OtherEnemy%,0) + EnemyHitbox%(EnemyHitboxID%(OtherEnemy%),0)
-        y2 = EnemyLocations%(OtherEnemy%,1) + EnemyHitbox%(EnemyHitboxID%(OtherEnemy%),1)
+        x2 = EnemyLocations%(OtherEnemy%,X) + EnemyHitbox%(EnemyHitboxID%(OtherEnemy%),0)
+        y2 = EnemyLocations%(OtherEnemy%,Y) + EnemyHitbox%(EnemyHitboxID%(OtherEnemy%),1)
         w2 = EnemyHitbox%(EnemyHitboxID%(OtherEnemy%),2)
         h2 = EnemyHitbox%(EnemyHitboxID%(OtherEnemy%),3)
         IF FNcollide(x1, y1, w1, h1, x2, y2, w2, h2) = 1 THEN
@@ -193,14 +195,14 @@ DEF PROCenemy_ship_collide_player
   FOR Enemy%=0 TO MaxEnemies% - 1
 
     REM This is our hitbox
-    x1 = EnemyLocations%(Enemy%,0) + EnemyHitbox%(EnemyHitboxID%(Enemy%),0)
-    y1 = EnemyLocations%(Enemy%,1) + EnemyHitbox%(EnemyHitboxID%(Enemy%),1)
+    x1 = EnemyLocations%(Enemy%,X) + EnemyHitbox%(EnemyHitboxID%(Enemy%),0)
+    y1 = EnemyLocations%(Enemy%,Y) + EnemyHitbox%(EnemyHitboxID%(Enemy%),1)
     w1 = EnemyHitbox%(EnemyHitboxID%(Enemy%),2)
     h1 = EnemyHitbox%(EnemyHitboxID%(Enemy%),3)
 
     REM Collision with a player
-    x2 = PlayerLocation%(0) + PlayerHitbox%(0)
-    y2 = PlayerLocation%(1) + PlayerHitbox%(1)
+    x2 = PlayerLocation%(X) + PlayerHitbox%(0)
+    y2 = PlayerLocation%(Y) + PlayerHitbox%(1)
     w2 = PlayerHitbox%(2)
     h2 = PlayerHitbox%(3)
     IF FNcollide(x1, y1, w1, h1, x2, y2, w2, h2) = 1 THEN
