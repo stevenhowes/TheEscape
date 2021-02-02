@@ -2,6 +2,12 @@ SCREENMODE%=32
 SCREENGFXWIDTH%=1600
 SCREENGFXHEIGHT%=1200
 
+IF INKEY(-42) THEN
+  SCREENMODE%=28
+  SCREENGFXWIDTH%=1280
+  SCREENGFXHEIGHT%=960
+ENDIF
+
 PROC_main
 END
 
@@ -11,7 +17,7 @@ DEF PROC_main
 
   DIM PlayerLocation%(1)
   PlayerLocation%(0) = SCREENGFXWIDTH%/2
-  PlayerLocation%(1) = 100
+  PlayerLocation%(1) = SCREENGFXHEIGHT%/6
   PlayerVelocity%=0
   PlayerShields%=100
   PlayerStructuralIntegrity%=100
@@ -138,20 +144,20 @@ DEF PROChud_draw
 
   REM Attribute names
   GCOL 0,0
-  MOVE 75,1150
+  MOVE 75,SCREENGFXHEIGHT%-50
   PRINT "Sheilds"
-  MOVE 75,1120
+  MOVE 75,SCREENGFXHEIGHT%-80
   PRINT "Integrity"
-  MOVE 75,1090
+  MOVE 75,SCREENGFXHEIGHT%-110
   PRINT "Velocity"
 
   REM Attribute values
   GCOL 0,7
-  MOVE 130,1150
+  MOVE 130,SCREENGFXHEIGHT%-50
   PRINT PlayerShields%
-  MOVE 130,1120
+  MOVE 130,SCREENGFXHEIGHT%-80
   PRINT PlayerStructuralIntegrity%
-  MOVE 130,1090
+  MOVE 130,SCREENGFXHEIGHT%-110
   PRINT PlayerVelocity%
 ENDPROC
 
