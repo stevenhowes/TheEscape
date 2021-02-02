@@ -28,8 +28,15 @@ DEF PROC_main
   DIM PlayerHitbox%(3)
   PlayerHitbox%() = 0,0,60,81
 
-  DIM EnemyHitbox%(0,3)
-  EnemyHitbox%() = 0,0,48,74
+  DIM EnemyHitbox%(1,3)
+  EnemyHitbox%(0,0) = 0
+  EnemyHitbox%(0,1) = 0
+  EnemyHitbox%(0,2) = 48
+  EnemyHitbox%(0,3) = 74
+  EnemyHitbox%(1,0) = 0
+  EnemyHitbox%(1,1) = 0
+  EnemyHitbox%(1,2) = 38
+  EnemyHitbox%(1,3) = 56
 
   XMovePerCent%=5
   ResetShipSprite% = 0
@@ -45,9 +52,15 @@ DEF PROC_main
     EnemyLocations%(Enemy%,X) = RND(SCREENGFXWIDTH%)
     EnemyLocations%(Enemy%,Y) = SCREENGFXHEIGHT% + (RND(SCREENGFXHEIGHT%/2) * (Enemy% + 1))
     EnemySprites$(Enemy%) = "durno_ship"
-    EnemyHitboxID%(Enemy%) = 0
-    EnemyVelocity%(Enemy%,X) = RND(10) - 5
-    EnemyVelocity%(Enemy%,Y) = RND(5) + 5
+    EnemyVelocity%(Enemy%,X) = RND(6) - 3
+    EnemyVelocity%(Enemy%,Y) = RND(3) + 3
+    EnemyHitboxID%(Enemy%) = RND(2)-1
+    IF EnemyHitboxID%(Enemy%) = 1 THEN
+      EnemySprites$(Enemy%) = "durno_ship2"
+    EnemyVelocity%(Enemy%,X) = RND(8) - 4
+    EnemyVelocity%(Enemy%,Y) = RND(10) + 6
+    ENDIF
+
   NEXT Enemy%
 
   REM Show/hide debug display
