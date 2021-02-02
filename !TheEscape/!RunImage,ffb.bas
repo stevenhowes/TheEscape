@@ -45,6 +45,7 @@ DEF PROC_main
     EnemyLocations%(Enemy%,X) = RND(SCREENGFXWIDTH%)
     EnemyLocations%(Enemy%,Y) = SCREENGFXHEIGHT% + (RND(SCREENGFXHEIGHT%/2) * (Enemy% + 1))
     EnemySprites$(Enemy%) = "durno_ship"
+    EnemyHitboxID%(Enemy%) = 0
     EnemyVelocity%(Enemy%,X) = RND(10) - 5
     EnemyVelocity%(Enemy%,Y) = RND(5) + 5
   NEXT Enemy%
@@ -284,15 +285,15 @@ DEF PROCdebugoutput
   PRINT "Scr: " + STR$(Scr%)
 
   FOR Enemy%=0 TO MaxEnemies% - 1
-    PRINT "ENEMY:" STR$(Enemy%) + " " + STR$(EnemyLocations%(Enemy%,0)) + "," + STR$(EnemyLocations%(Enemy%,1)) + " " + STR$(EnemyVelocityX%(Enemy%)) + " " + STR$(EnemyVelocityY%(Enemy%))
+    PRINT "ENEMY:" STR$(Enemy%) + " " + STR$(EnemyLocations%(Enemy%,X)) + "," + STR$(EnemyLocations%(Enemy%,Y)) + " " + STR$(EnemyVelocity%(Enemy%,X)) + " " + STR$(EnemyVelocity%(Enemy%,Y))
   NEXT Enemy%
 
 
   FOR Enemy%=0 TO MaxEnemies% - 1
-    RECT EnemyLocations%(Enemy%,0) + EnemyHitbox%(EnemyHitboxID%(Enemy%),0), EnemyLocations%(Enemy%,1) + EnemyHitbox%(EnemyHitboxID%(Enemy%),1), EnemyHitbox%(EnemyHitboxID%(Enemy%),2), EnemyHitbox%(EnemyHitboxID%(Enemy%),3)
+    RECT EnemyLocations%(Enemy%,X) + EnemyHitbox%(EnemyHitboxID%(Enemy%),X), EnemyLocations%(Enemy%,1) + EnemyHitbox%(EnemyHitboxID%(Enemy%),1), EnemyHitbox%(EnemyHitboxID%(Enemy%),2), EnemyHitbox%(EnemyHitboxID%(Enemy%),3)
   NEXT Enemy%
 
-  RECT PlayerLocation%(0) + PlayerHitbox%(0), PlayerLocation%(1) + PlayerHitbox%(1), PlayerHitbox%(2), PlayerHitbox%(3)
+  RECT PlayerLocation%(X) + PlayerHitbox%(0), PlayerLocation%(Y) + PlayerHitbox%(1), PlayerHitbox%(2), PlayerHitbox%(3)
 ENDPROC
 
 REM Delay routine - thanks Sophie
