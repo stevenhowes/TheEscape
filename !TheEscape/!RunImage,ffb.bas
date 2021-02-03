@@ -28,6 +28,12 @@ DEF PROC_main
   DIM PlayerHitbox%(3)
   PlayerHitbox%() = 0,0,60,81
 
+  DIM PlayerPhaserOffset%(1,1)
+  PlayerPhaserOffset%(0,X) = 20
+  PlayerPhaserOffset%(0,Y) = 75
+  PlayerPhaserOffset%(1,X) = 40
+  PlayerPhaserOffset%(1,Y) = 75
+
   LeftID% = -1
   RightID% = -1
 
@@ -98,6 +104,7 @@ DEF PROC_main
     PROCenemy_ship_move
     PROCenemy_ship_collide_player
     PROCenemy_ship_collide_npc
+    PROCplayer_arc_calculatetarget
 
     REM Still not sure about this bollocks, but it does seem to work now
     SYS "OS_Byte",19
@@ -114,7 +121,7 @@ DEF PROC_main
 
     REM Player
     PROCplayer_ship_draw
-    PROCplayer_arc_calculatetarget
+    PROCplayer_target_draw
 
     PROCenemy_ship_draw
 
@@ -332,6 +339,24 @@ DEF PROCinputs
   ENDIF
 ENDPROC
 
+DEF PROCplayer_target_draw
+  IF LeftID% >= 0 THEN
+    REM LINE PlayerLocation%(X) + PlayerPhaserOffset%(0,X), PlayerLocation%(Y) + PlayerPhaserOffset%(0,Y), EnemyLocations%(LeftID%,X), EnemyLocations%(LeftID%,Y)
+
+    RECT EnemyLocations%(LeftID%,X) + EnemyHitbox%(EnemyHitboxID%(LeftID%),X) - 10, EnemyLocations%(LeftID%,1) + EnemyHitbox%(EnemyHitboxID%(LeftID%),1) - 10, EnemyHitbox%(EnemyHitboxID%(LeftID%),2) + 20, EnemyHitbox%(EnemyHitboxID%(LeftID%),3) + 20
+
+    RECT EnemyLocations%(LeftID%,X) + EnemyHitbox%(EnemyHitboxID%(LeftID%),X) - 8, EnemyLocations%(LeftID%,1) + EnemyHitbox%(EnemyHitboxID%(LeftID%),1) - 8, EnemyHitbox%(EnemyHitboxID%(LeftID%),2) + 16, EnemyHitbox%(EnemyHitboxID%(LeftID%),3) + 16
+  ENDIF
+
+  IF RightID% >= 0 THEN
+    REM LINE PlayerLocation%(X) + PlayerPhaserOffset%(1,X), PlayerLocation%(Y) + PlayerPhaserOffset%(1,Y), EnemyLocations%(RightID%,X), EnemyLocations%(RightID%,Y)
+
+    RECT EnemyLocations%(RightID%,X) + EnemyHitbox%(EnemyHitboxID%(RightID%),X) -10, EnemyLocations%(RightID%,1) + EnemyHitbox%(EnemyHitboxID%(RightID%),1) -10, EnemyHitbox%(EnemyHitboxID%(RightID%),2) +20, EnemyHitbox%(EnemyHitboxID%(RightID%),3) +20
+
+    RECT EnemyLocations%(RightID%,X) + EnemyHitbox%(EnemyHitboxID%(RightID%),X) -8, EnemyLocations%(RightID%,1) + EnemyHitbox%(EnemyHitboxID%(RightID%),1) -8, EnemyHitbox%(EnemyHitboxID%(RightID%),2) +16, EnemyHitbox%(EnemyHitboxID%(RightID%),3) +16
+  ENDIF
+ENDPROC
+
 REM Debug prints
 DEF PROCdebugoutput
   MOVE 0,500
@@ -353,11 +378,11 @@ DEF PROCdebugoutput
   RECT PlayerLocation%(X) + PlayerHitbox%(0), PlayerLocation%(Y) + PlayerHitbox%(1), PlayerHitbox%(2), PlayerHitbox%(3)
 
   IF LeftID% >= 0 THEN
-    LINE PlayerLocation%(X), PlayerLocation%(Y), EnemyLocations%(LeftID%,X), EnemyLocations%(LeftID%,Y)
+    LINE PlayerLocation%(X) + PlayerPhaserOffset%(0,X), PlayerLocation%(Y) + PlayerPhaserOffset%(0,Y), EnemyLocations%(LeftID%,X), EnemyLocations%(LeftID%,Y)
   ENDIF
 
   IF RightID% >= 0 THEN
-    LINE PlayerLocation%(X), PlayerLocation%(Y), EnemyLocations%(RightID%,X), EnemyLocations%(RightID%,Y)
+    LINE PlayerLocation%(X) + PlayerPhaserOffset%(1,X), PlayerLocation%(Y) + PlayerPhaserOffset%(1,Y), EnemyLocations%(RightID%,X), EnemyLocations%(RightID%,Y)
   ENDIF
 ENDPROC
 
