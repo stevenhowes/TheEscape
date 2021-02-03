@@ -144,7 +144,6 @@ ENDPROC
 
 REM Move enemy ship (display and physical)
 DEF PROCenemy_ship_move
-  REM TODO: Only uses player velocity currently (/2 so they don't match stars)
   FOR Enemy%=0 TO MaxEnemies% - 1
     EnemyLocations%(Enemy%,Y) = EnemyLocations%(Enemy%,Y) - ((Cents% - LastCents%) * PlayerVelocity%/20) - ((Cents% - LastCents%) * EnemyVelocity%(Enemy%,Y))
 
@@ -267,32 +266,31 @@ ENDPROC
 
 REM Calculate player ship's phaser arc
 DEF PROCplayer_arc_calculatetarget
-GCOL 0,0
-NoseX% = PlayerLocation%(X) + PlayerHitbox%(0) + (PlayerHitbox%(2)/2)
-NoseY% = (PlayerLocation%(Y) + PlayerHitbox%(1) + PlayerHitbox%(3))
-REM LINE NoseX%, NoseY%, NoseX% + 200,NoseY% + 1000
-REM LINE NoseX%, NoseY%, NoseX%,NoseY% + 1000
-REM LINE NoseX%, NoseY%, NoseX% - 200,NoseY% + 1000
+  NoseX% = PlayerLocation%(X) + PlayerHitbox%(0) + (PlayerHitbox%(2)/2)
+  NoseY% = (PlayerLocation%(Y) + PlayerHitbox%(1) + PlayerHitbox%(3))
 
-LeftDistance% = 1000
-LeftID% = -1
-RightDistance% = 1000
-RightID% = -1
 
-FOR Enemy%=0 TO MaxEnemies% - 1
+  LeftDistance% = 1000
+  LeftID% = -1
+  RightDistance% = 1000
+  RightID% = -1
+
+  FOR Enemy%=0 TO MaxEnemies% - 1
     LeftCornerX% = EnemyLocations%(Enemy%,X) + EnemyHitbox%(EnemyHitboxID%(Enemy%),X)
     LeftCornerY% = EnemyLocations%(Enemy%,1) + EnemyHitbox%(EnemyHitboxID%(Enemy%),1)
     RightCornerX% = LeftCornerX% + EnemyHitbox%(EnemyHitboxID%(Enemy%),2)
     IF LeftCornerY% > NoseY% THEN
       DistanceY% = LeftCornerY% - NoseY%
       DistanceX% = ABS(NoseX% - ((LeftCornerX% + RightCornerX%) / 2))
+
       IF (DistanceY%/5) > DistanceX% THEN
         IF (NoseX% - ((LeftCornerX% + RightCornerX%) / 2)) > 0 THEN
           IF DistanceY% < LeftDistance% THEN
             LeftDistance% = DistanceY%
             LeftID% = Enemy%
           ENDIF
-        ELSE
+        ENDIF
+        IF (NoseX% - ((LeftCornerX% + RightCornerX%) / 2)) < 0 THEN
           IF DistanceY% < RightDistance% THEN
             RightDistance% = DistanceY%
             RightID% = Enemy%
@@ -300,7 +298,7 @@ FOR Enemy%=0 TO MaxEnemies% - 1
         ENDIF
       ENDIF
     ENDIF
-NEXT Enemy%
+  NEXT Enemy%
 
 ENDPROC
 
