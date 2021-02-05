@@ -1,11 +1,15 @@
 SCREENMODE%=32
 SCREENGFXWIDTH%=1600
 SCREENGFXHEIGHT%=1200
+MaxEnemies% = 10
+PlayerYHeightDivide%=8
 
 IF INKEY(-42) THEN
   SCREENMODE%=28
   SCREENGFXWIDTH%=1280
   SCREENGFXHEIGHT%=960
+  MaxEnemies% = 5
+  PlayerYHeightDivide%=6
 ENDIF
 
 X = 0
@@ -20,7 +24,7 @@ DEF PROC_main
 
   DIM PlayerLocation%(1)
   PlayerLocation%(X) = SCREENGFXWIDTH%/2
-  PlayerLocation%(Y) = SCREENGFXHEIGHT%/30
+  PlayerLocation%(Y) = SCREENGFXHEIGHT%/PlayerYHeightDivide%
   PlayerVelocity%=0
   PlayerShields%=100
   PlayerStructuralIntegrity%=100
@@ -50,26 +54,17 @@ DEF PROC_main
   XMovePerCent%=5
   ResetShipSprite% = 0
 
-  MaxEnemies% = 10
   DIM EnemyLocations%(MaxEnemies% - 1,1)
   DIM EnemySprites$(MaxEnemies% - 1)
   DIM EnemyHitboxID%(MaxEnemies% - 1)
   DIM EnemyVelocity%(MaxEnemies% - 1,1)
+  DIM EnemyHealth%(MaxEnemies% - 1)
+  DIM EnemyCollidable%(MaxEnemies% -1)
+  DIM EnemyCollideForce%(MaxEnemies% -1)
 
   REM Random it up for now
   FOR Enemy%=0 TO MaxEnemies% - 1
-    EnemyLocations%(Enemy%,X) = RND(SCREENGFXWIDTH%)
-    EnemyLocations%(Enemy%,Y) = SCREENGFXHEIGHT% + (RND(SCREENGFXHEIGHT%/2) * (Enemy% + 1))
-    EnemySprites$(Enemy%) = "durno_ship"
-    EnemyVelocity%(Enemy%,X) = 0
-    EnemyVelocity%(Enemy%,Y) = RND(3) + 2
-    EnemyHitboxID%(Enemy%) = RND(2)-1
-    IF EnemyHitboxID%(Enemy%) = 1 THEN
-      EnemySprites$(Enemy%) = "durno_ship2"
-    EnemyVelocity%(Enemy%,X) = RND(3) - 2
-    EnemyVelocity%(Enemy%,Y) = RND(10) + 6
-    ENDIF
-
+    PROCrespawn_enemy(Enemy%)
   NEXT Enemy%
 
   REM Show/hide debug display
@@ -103,8 +98,9 @@ DEF PROC_main
     REM NPCs
     PROCenemy_ship_move
     PROCenemy_ship_collide_player
-    PROCenemy_ship_collide_npc
+    REM PROCenemy_ship_collide_npc
     PROCplayer_arc_calculatetarget
+    PROCenemy_ship_handle_damage
 
     REM Still not sure about this bollocks, but it does seem to work now
     SYS "OS_Byte",19
@@ -136,6 +132,28 @@ DEF PROC_main
 
 ENDPROC
 
+DEF PROCenemy_ship_handle_damage
+ENDPROC
+
+DEF PROCrespawn_enemy(Enemy%)
+    EnemyLocations%(Enemy%,X) = RND(SCREENGFXWIDTH%)
+    EnemyLocations%(Enemy%,Y) = SCREENGFXHEIGHT% + (RND(SCREENGFXHEIGHT%/2) * (Enemy% + 1))
+    EnemySprites$(Enemy%) = "durno_ship"
+    EnemyVelocity%(Enemy%,X) = 0
+    EnemyVelocity%(Enemy%,Y) = RND(3) + 2
+    EnemyHitboxID%(Enemy%) = RND(2)-1
+    EnemyHealth%(Enemy%) = 100
+    EnemyCollidable%(Enemy%) = 1
+    EnemyCollideForce%(Enemy%) = 1000
+    IF EnemyHitboxID%(Enemy%) = 1 THEN
+      EnemySprites$(Enemy%) = "durno_ship2"
+      EnemyVelocity%(Enemy%,X) = RND(3) - 2
+      EnemyVelocity%(Enemy%,Y) = RND(10) + 6
+      EnemyHealth%(Enemy%) = 30
+      EnemyCollideForce%(Enemy%) = 30
+    ENDIF
+ENDPROC
+
 DEF PROCspecks_draw
   REM Specks / stars
   FOR Speck%=0 TO 49
@@ -157,8 +175,7 @@ DEF PROCenemy_ship_move
     EnemyLocations%(Enemy%,X) = EnemyLocations%(Enemy%,X) - ((Cents% - LastCents%) * EnemyVelocity%(Enemy%,X))
 
     IF EnemyLocations%(Enemy%,Y) <= 0 THEN
-      EnemyLocations%(Enemy%,Y) = SCREENGFXHEIGHT% + RND(SCREENGFXHEIGHT%)
-      EnemyLocations%(Enemy%,X) = RND(SCREENGFXWIDTH%)
+      PROCrespawn_enemy(Enemy%)
     ENDIF
   NEXT Enemy%
 ENDPROC
@@ -214,7 +231,7 @@ DEF PROCenemy_ship_collide_npc
   NEXT Enemy%
 ENDPROC
 
-REM Handle enemy collisions with anything
+REM Handle enemy collisions with player
 DEF PROCenemy_ship_collide_player
   FOR Enemy%=0 TO MaxEnemies% - 1
 
@@ -231,11 +248,14 @@ DEF PROCenemy_ship_collide_player
     h2 = PlayerHitbox%(3)
     IF FNcollide(x1, y1, w1, h1, x2, y2, w2, h2) = 1 THEN
       MOVE x1+w1,y1+h1
-      PlayerVelocity% = 0
-      PRINT "BOOM"
-      REM IF DebugOut% = 1 THEN
-      REM  PRINT " hits player"
-      REM ENDIF
+      IF EnemyCollidable%(Enemy%) = 1 THEN
+        PlayerVelocity% = PlayerVelocity% / 2
+        EnemyHealth%(Enemy%) = EnemyHealth%(Enemy%) - 30
+        PlayerStructuralIntegrity% = PlayerStructuralIntegrity% - EnemyCollideForce%(Enemy%)
+        EnemyCollidable%(Enemy%) = 0
+        EnemyVelocity%(Enemy%,X) = 0
+        EnemyVelocity%(Enemy%,Y) = 0
+      ENDIF
     ENDIF
   NEXT Enemy%
 ENDPROC
@@ -273,7 +293,7 @@ ENDPROC
 
 REM Calculate player ship's phaser arc
 DEF PROCplayer_arc_calculatetarget
-  NoseX% = PlayerLocation%(x) + PlayerHitbox%(0) + (PlayerHitbox%(2)/2)
+  NoseX% = PlayerLocation%(X) + PlayerHitbox%(0) + (PlayerHitbox%(2)/2)
   NoseXLeft% = PlayerLocation%(X) + PlayerHitbox%(0)
   NoseXRight% = PlayerLocation%(X) + PlayerHitbox%(0) + PlayerHitbox%(2)
   NoseY% = (PlayerLocation%(Y) + PlayerHitbox%(1) + PlayerHitbox%(3))
@@ -358,6 +378,13 @@ DEF PROCplayer_target_draw
   ENDIF
 ENDPROC
 
+DEF FNpad(String$,Length%)
+  OutString$=String$
+  WHILE LEN(OutString$) < Length%
+    OutString$ = OutString$ + " "
+  ENDWHILE
+=OutString$
+
 REM Debug prints
 DEF PROCdebugoutput
   MOVE 0,500
@@ -368,7 +395,7 @@ DEF PROCdebugoutput
   PRINT "Right: " + STR$(RightID%)
 
   FOR Enemy%=0 TO MaxEnemies% - 1
-    PRINT "ENEMY:" STR$(Enemy%) + " " + STR$(EnemyLocations%(Enemy%,X)) + "," + STR$(EnemyLocations%(Enemy%,Y)) + " " + STR$(EnemyVelocity%(Enemy%,X)) + " " + STR$(EnemyVelocity%(Enemy%,Y))
+    PRINT "NPC:" STR$(Enemy%) + " " + FNpad(STR$(EnemyLocations%(Enemy%,X)),4) + " " + FNpad(STR$(EnemyLocations%(Enemy%,Y)),4) + " " + FNpad(STR$(EnemyVelocity%(Enemy%,X)),3) + " " + FNpad(STR$(EnemyVelocity%(Enemy%,Y)),3) + " " + FNpad(STR$(EnemyHealth%(Enemy%)),3)
   NEXT Enemy%
 
 
