@@ -29,10 +29,10 @@ DEF PROC_main
   PlayerShields%=100
   PlayerStructuralIntegrity%=100
   PlayerSprite$ = "player_ship"
-
+  PlayerExplodeNextFrame% = 0
   DIM PlayerHitbox%(3)
   PlayerHitbox%() = 0,0,60,81
-
+  DieEnd% = 0
   DIM PlayerPhaserOffset%(1,1)
   PlayerPhaserOffset%(0,X) = 20
   PlayerPhaserOffset%(0,Y) = 75
@@ -62,6 +62,7 @@ DEF PROC_main
   DIM EnemyHealth%(MaxEnemies% - 1)
   DIM EnemyCollidable%(MaxEnemies% -1)
   DIM EnemyCollideForce%(MaxEnemies% -1)
+  DIM EnemyExplodeNextFrame%(MaxEnemies% -1)
 
   REM Random it up for now
   FOR Enemy%=0 TO MaxEnemies% - 1
@@ -94,15 +95,22 @@ DEF PROC_main
     Cents% = TIME
 
     REM Controls
-    PROCinputs
 
-    REM NPCs
-    PROCenemy_ship_move
-    PROCenemy_ship_collide_player
-    REM PROCenemy_ship_collide_npc
-    PROCplayer_arc_calculatetarget
-    PROCenemy_ship_handle_damage
     PROCplayer_ship_handle_damage
+    PROCenemy_ship_handle_damage
+    PROCenemy_ship_move
+
+    IF PlayerStructuralIntegrity% > 0 THEN
+      PROCinputs
+
+
+      REM NPCs
+      PROCenemy_ship_collide_player
+      REM PROCenemy_ship_collide_npc
+      PROCplayer_arc_calculatetarget
+      PROCspecks_move
+    ENDIF
+
 
     REM Still not sure about this bollocks, but it does seem to work now
     SYS "OS_Byte",19
@@ -136,14 +144,42 @@ ENDPROC
 
 DEF PROCplayer_ship_handle_damage
   IF PlayerStructuralIntegrity% <= 0 THEN
-    PlayerSprite$ = "explode_shp1"
+      IF TIME > PlayerExplodeNextFrame% THEN
+        PlayerExplodeNextFrame% = TIME + 4
+        IF PlayerSprite$ = "player_ship" THEN
+          DieEnd% = TIME + 100
+        ENDIF
+        CASE PlayerSprite$ OF
+           WHEN "player_ship": PlayerSprite$ = "explode_shp1"
+           WHEN "explode_shp1": PlayerSprite$ = "explode_shp2"
+           WHEN "explode_shp2": PlayerSprite$ = "explode_shp3"
+           WHEN "explode_shp3": PlayerSprite$ = "explode_shp4"
+           WHEN "explode_shp4": PlayerSprite$ = "explode_shp1"
+        ENDCASE
+      ENDIF
+      IF TIME > DieEnd% THEN
+        PlayerSprite$ = "default"
+        CLS
+        PRINT "YOU DED"
+        END
+      ENDIF
   ENDIF
 ENDPROC
 
 DEF PROCenemy_ship_handle_damage
   FOR Enemy%=0 TO MaxEnemies% - 1
     IF EnemyHealth%(Enemy%) <= 0 THEN
-      EnemySprites$(Enemy%) = "explode_shp1"
+      IF TIME > EnemyExplodeNextFrame%(Enemy%) THEN
+        EnemyExplodeNextFrame%(Enemy%) = TIME + 4
+        CASE EnemySprites$(Enemy%) OF
+           WHEN "durno_ship": EnemySprites$(Enemy%) = "explode_shp1"
+           WHEN "durno_ship2": EnemySprites$(Enemy%) = "explode_shp1"
+           WHEN "explode_shp1": EnemySprites$(Enemy%) = "explode_shp2"
+           WHEN "explode_shp2": EnemySprites$(Enemy%) = "explode_shp3"
+           WHEN "explode_shp3": EnemySprites$(Enemy%) = "explode_shp4"
+           WHEN "explode_shp4": EnemySprites$(Enemy%) = "explode_shp1"
+        ENDCASE
+      ENDIF
     ENDIF
   NEXT Enemy%
 ENDPROC
@@ -158,6 +194,7 @@ DEF PROCrespawn_enemy(Enemy%)
     EnemyHealth%(Enemy%) = 100
     EnemyCollidable%(Enemy%) = 1
     EnemyCollideForce%(Enemy%) = 1000
+    EnemyExplodeNextFrame% = 0
     IF EnemyHitboxID%(Enemy%) = 1 THEN
       EnemySprites$(Enemy%) = "durno_ship2"
       EnemyVelocity%(Enemy%,X) = RND(3) - 2
@@ -172,6 +209,12 @@ DEF PROCspecks_draw
   FOR Speck%=0 TO 49
     GCOL 0,0
     LINE SpeckLocations%(Speck%,X),SpeckLocations%(Speck%,Y),SpeckLocations%(Speck%,X),(PlayerVelocity% / 3) + SpeckLocations%(Speck%,Y)
+  NEXT Speck%
+ENDPROC
+
+DEF PROCspecks_move
+  REM Specks / stars
+  FOR Speck%=0 TO 49
     SpeckLocations%(Speck%,Y) = SpeckLocations%(Speck%,Y) - ((Cents% - LastCents%) * PlayerVelocity%/10)
     IF SpeckLocations%(Speck%,Y) < 0 THEN
       SpeckLocations%(Speck%,Y) = SCREENGFXHEIGHT%
@@ -408,7 +451,8 @@ DEF PROCdebugoutput
   PRINT "Right: " + STR$(RightID%)
 
   FOR Enemy%=0 TO MaxEnemies% - 1
-    PRINT "NPC:" STR$(Enemy%) + " " + FNpad(STR$(EnemyLocations%(Enemy%,X)),4) + " " + FNpad(STR$(EnemyLocations%(Enemy%,Y)),4) + " " + FNpad(STR$(EnemyVelocity%(Enemy%,X)),3) + " " + FNpad(STR$(EnemyVelocity%(Enemy%,Y)),3) + " " + FNpad(STR$(EnemyHealth%(Enemy%)),3)
+    PRINT "NPC:" STR$(Enemy%) + " " + FNpad(STR$(EnemyLocations%(Enemy%,X)),4) + " " + FNpad(STR$(EnemyLocations%(Enemy%,Y)),4) + " " + FNpad(STR$(EnemyVelocity%(Enemy%,X)),3) + " " + FNpad(STR$(EnemyVelocity%(Enemy%,Y)),3)
+    PRINT FNpad(STR$(EnemyHealth%(Enemy%)),3) + " " + EnemySprites$(Enemy%) + " " + STR$(EnemyExplodeNextFrame%)
   NEXT Enemy%
 
 
