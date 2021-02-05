@@ -133,6 +133,11 @@ DEF PROC_main
 ENDPROC
 
 DEF PROCenemy_ship_handle_damage
+  FOR Enemy%=0 TO MaxEnemies% - 1
+    IF EnemyHealth%(Enemy%) <= 0 THEN
+      EnemySprites$(Enemy%) = "explode_shp1"
+    ENDIF
+  NEXT Enemy%
 ENDPROC
 
 DEF PROCrespawn_enemy(Enemy%)
@@ -253,8 +258,8 @@ DEF PROCenemy_ship_collide_player
         EnemyHealth%(Enemy%) = EnemyHealth%(Enemy%) - 30
         PlayerStructuralIntegrity% = PlayerStructuralIntegrity% - EnemyCollideForce%(Enemy%)
         EnemyCollidable%(Enemy%) = 0
-        EnemyVelocity%(Enemy%,X) = 0
-        EnemyVelocity%(Enemy%,Y) = 0
+        EnemyVelocity%(Enemy%,Y) = EnemyVelocity%(Enemy%,Y) / 2
+        EnemyVelocity%(Enemy%,X) = EnemyVelocity%(Enemy%,X) * 4
       ENDIF
     ENDIF
   NEXT Enemy%
