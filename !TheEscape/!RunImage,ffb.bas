@@ -273,9 +273,10 @@ ENDPROC
 
 REM Calculate player ship's phaser arc
 DEF PROCplayer_arc_calculatetarget
-  NoseX% = PlayerLocation%(X) + PlayerHitbox%(0) + (PlayerHitbox%(2)/2)
+  NoseX% = PlayerLocation%(x) + PlayerHitbox%(0) + (PlayerHitbox%(2)/2)
+  NoseXLeft% = PlayerLocation%(X) + PlayerHitbox%(0)
+  NoseXRight% = PlayerLocation%(X) + PlayerHitbox%(0) + PlayerHitbox%(2)
   NoseY% = (PlayerLocation%(Y) + PlayerHitbox%(1) + PlayerHitbox%(3))
-
 
   LeftDistance% = 1000
   LeftID% = -1
@@ -291,13 +292,13 @@ DEF PROCplayer_arc_calculatetarget
       DistanceX% = ABS(NoseX% - ((LeftCornerX% + RightCornerX%) / 2))
 
       IF (DistanceY%/5) > DistanceX% THEN
-        IF (NoseX% - ((LeftCornerX% + RightCornerX%) / 2)) > 0 THEN
+        IF (NoseXRight% - ((LeftCornerX% + RightCornerX%) / 2)) > 0 THEN
           IF DistanceY% < LeftDistance% THEN
             LeftDistance% = DistanceY%
             LeftID% = Enemy%
           ENDIF
         ENDIF
-        IF (NoseX% - ((LeftCornerX% + RightCornerX%) / 2)) < 0 THEN
+        IF (NoseXLeft% - ((LeftCornerX% + RightCornerX%) / 2)) < 0 THEN
           IF DistanceY% < RightDistance% THEN
             RightDistance% = DistanceY%
             RightID% = Enemy%
