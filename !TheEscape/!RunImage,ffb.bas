@@ -28,6 +28,7 @@ DEF PROC_main
   PlayerVelocity%=0
   PlayerShields%=100
   PlayerStructuralIntegrity%=100
+  PlayerSprite$ = "player_ship"
 
   DIM PlayerHitbox%(3)
   PlayerHitbox%() = 0,0,60,81
@@ -101,6 +102,7 @@ DEF PROC_main
     REM PROCenemy_ship_collide_npc
     PROCplayer_arc_calculatetarget
     PROCenemy_ship_handle_damage
+    PROCplayer_ship_handle_damage
 
     REM Still not sure about this bollocks, but it does seem to work now
     SYS "OS_Byte",19
@@ -130,6 +132,12 @@ DEF PROC_main
 
   UNTIL FALSE
 
+ENDPROC
+
+DEF PROCplayer_ship_handle_damage
+  IF PlayerStructuralIntegrity% <= 0 THEN
+    PlayerSprite$ = "explode_shp1"
+  ENDIF
 ENDPROC
 
 DEF PROCenemy_ship_handle_damage
@@ -290,7 +298,7 @@ REM Draw player ship
 DEF PROCplayer_ship_draw
   REM If using l/r sprites we debounce to stop it looking twitchy
   IF Cents% > ResetShipSprite% THEN
-    ShipSprite$ = "player_ship"
+    ShipSprite$ = PlayerSprite$
   ENDIF
   PROCdraw_sprite(ShipSprite$,PlayerLocation%(0),PlayerLocation%(1))
 ENDPROC
