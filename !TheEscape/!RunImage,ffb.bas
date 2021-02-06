@@ -22,6 +22,7 @@ DEF PROC_main
   REM Current graphics buffer
   Scr% = 1
 
+  VOICE 1,"Percussion-Noise"
   DIM PlayerLocation%(1)
   PlayerLocation%(X) = SCREENGFXWIDTH%/2
   PlayerLocation%(Y) = SCREENGFXHEIGHT%/PlayerYHeightDivide%
@@ -147,7 +148,8 @@ DEF PROCplayer_ship_handle_damage
       IF TIME > PlayerExplodeNextFrame% THEN
         PlayerExplodeNextFrame% = TIME + 4
         IF PlayerSprite$ = "player_ship" THEN
-          DieEnd% = TIME + 100
+          DieEnd% = TIME + 150
+         SOUND 1,-5,0,50
         ENDIF
         CASE PlayerSprite$ OF
            WHEN "player_ship": PlayerSprite$ = "explode_shp1"
@@ -169,6 +171,9 @@ ENDPROC
 DEF PROCenemy_ship_handle_damage
   FOR Enemy%=0 TO MaxEnemies% - 1
     IF EnemyHealth%(Enemy%) <= 0 THEN
+      IF EnemySprites$(Enemy%) = "durno_ship2" THEN
+         SOUND 1,-5,0,50
+      ENDIF
       IF TIME > EnemyExplodeNextFrame%(Enemy%) THEN
         EnemyExplodeNextFrame%(Enemy%) = TIME + 4
         CASE EnemySprites$(Enemy%) OF
