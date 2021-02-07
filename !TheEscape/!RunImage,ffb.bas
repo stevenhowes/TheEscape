@@ -16,17 +16,15 @@ PROCtitle
 
 PROCfinal_gfx_setup
 
-PROCmain
+PROCmain_scene1
 
 END
 
 DEF PROCtitle
-  MODE 4
   CLS
   PROCdraw_sprite("intro_25",320,256)
   KEY$ = GET$
 
-  SCREENMODE% = 25
   IF KEY$ = "1" THEN
     SCREENMODE% = 32
   ENDIF
@@ -39,6 +37,11 @@ DEF PROCtitle
 ENDPROC
 
 DEF PROCinitial_gfx_setup
+  SCREENMODE% = 4
+
+
+  MODE SCREENMODE%
+
   sprite_area% = FNload_sprites("Spr")
 ENDPROC
 
@@ -60,16 +63,18 @@ DEF PROCfinal_gfx_setup
 
   REM Position text cursor at graphics location
   VDU 5
+
 ENDPROC
 
 DEF PROCaudio_setup
-  VOICE 1,"Percussion-Noise"
+  VOICES 2
+  VOICE 1,"WaveSynth-Beep"
+  VOICE 2,"Percussion-Noise"
 ENDPROC
 
-DEF PROCmain
+DEF PROCmain_scene1
   REM Current graphics buffer
   Scr% = 1
-
 
   DIM PlayerLocation%(1)
   PlayerLocation%(X) = SCREENGFXWIDTH%/2
@@ -124,8 +129,6 @@ DEF PROCmain
     SpeckLocations%(Speck%,X) = RND(SCREENGFXWIDTH%)
     SpeckLocations%(Speck%,Y) = RND(SCREENGFXHEIGHT%)
   NEXT Speck%
-
-
 
   REPEAT
     REM Store current time and last time
@@ -186,7 +189,7 @@ DEF PROCplayer_ship_handle_damage
         PlayerExplodeNextFrame% = TIME + 4
         IF PlayerSprite$ = "player_ship" THEN
           DieEnd% = TIME + 150
-         SOUND 1,-5,0,50
+         SOUND 2,-5,0,50
         ENDIF
         CASE PlayerSprite$ OF
            WHEN "player_ship": PlayerSprite$ = "explode_shp1"
@@ -209,7 +212,7 @@ DEF PROCenemy_ship_handle_damage
   FOR Enemy%=0 TO MaxEnemies% - 1
     IF EnemyHealth%(Enemy%) <= 0 THEN
       IF EnemySprites$(Enemy%) = "durno_ship2" THEN
-         SOUND 1,-5,0,50
+         SOUND 2,-5,0,50
       ENDIF
       IF TIME > EnemyExplodeNextFrame%(Enemy%) THEN
         EnemyExplodeNextFrame%(Enemy%) = TIME + 4
