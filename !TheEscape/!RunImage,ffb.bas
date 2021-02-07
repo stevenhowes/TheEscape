@@ -21,9 +21,9 @@ PROCmain
 END
 
 DEF PROCtitle
-  MODE 25
+  MODE 4
   CLS
-  PROCdraw_sprite("intro_25",0,0)
+  PROCdraw_sprite("intro_25",320,256)
   KEY$ = GET$
 
   SCREENMODE% = 25
