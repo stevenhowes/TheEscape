@@ -3,10 +3,13 @@ RiscOS Game
 
 All files are in RiscOS format, with the exception of .BAS files which are plain text conversions of the tokenised BASIC files for easy diffing at GitHub.
 
-Tested on RPCEmu emulating a Risc PC - StrongARM with 32MB of RAM.
+Tested on:
 
+RPCEmu on Win10 (interpreter and recompiler) - RiscOS 3.71 on StrongARM with 8MB of RAM, no VRAM
 
+RPCEmu on Win10 (interpreter and recompiler) - RiscOS 3.71 on StrongARM with 4MB of RAM, 2MB VRAM
 
+RPCEmu on Win10 (interpreter and recompiler) - RiscOS 5.27 on StrongARM with 256MB of RAM, 2MB VRAM
 
 Controls so far:
 
