@@ -1,28 +1,76 @@
-SCREENMODE%=32
-SCREENGFXWIDTH%=1600
-SCREENGFXHEIGHT%=1200
-MaxEnemies% = 10
-PlayerYHeightDivide%=8
-
-IF INKEY(-42) THEN
-  SCREENMODE%=28
-  SCREENGFXWIDTH%=1280
-  SCREENGFXHEIGHT%=960
-  MaxEnemies% = 5
-  PlayerYHeightDivide%=6
-ENDIF
-
+REM Useful constants
 X = 0
 Y = 1
 
-PROC_main
+REM Show/hide debug display
+DebugOut%=0
+
+REM Used for centiseconds per frame calcs
+Cents% = TIME
+
+PROCaudio_setup
+
+PROCinitial_gfx_setup
+
+PROCtitle
+
+PROCfinal_gfx_setup
+
+PROCmain
+
 END
 
-DEF PROC_main
+DEF PROCtitle
+  MODE 25
+  CLS
+  PROCdraw_sprite("intro_25",0,0)
+  KEY$ = GET$
+
+  SCREENMODE% = 25
+  IF KEY$ = "1" THEN
+    SCREENMODE% = 32
+  ENDIF
+  IF KEY$ = "2" THEN
+    SCREENMODE% = 28
+  ENDIF
+  IF SCREENMODE% = 25 THEN
+    PROCtitle
+  ENDIF
+ENDPROC
+
+DEF PROCinitial_gfx_setup
+  sprite_area% = FNload_sprites("Spr")
+ENDPROC
+
+DEF PROCfinal_gfx_setup
+  IF SCREENMODE% = 32 THEN
+    SCREENGFXWIDTH%=1600
+    SCREENGFXHEIGHT%=1200
+    MaxEnemies% = 10
+    PlayerYHeightDivide%=8
+  ENDIF
+  IF SCREENMODE% = 28 THEN
+    SCREENGFXWIDTH%=1280
+    SCREENGFXHEIGHT%=960
+    MaxEnemies% = 5
+    PlayerYHeightDivide%=6
+  ENDIF
+
+  MODE SCREENMODE%
+
+  REM Position text cursor at graphics location
+  VDU 5
+ENDPROC
+
+DEF PROCaudio_setup
+  VOICE 1,"Percussion-Noise"
+ENDPROC
+
+DEF PROCmain
   REM Current graphics buffer
   Scr% = 1
 
-  VOICE 1,"Percussion-Noise"
+
   DIM PlayerLocation%(1)
   PlayerLocation%(X) = SCREENGFXWIDTH%/2
   PlayerLocation%(Y) = SCREENGFXHEIGHT%/PlayerYHeightDivide%
@@ -70,8 +118,6 @@ DEF PROC_main
     PROCrespawn_enemy(Enemy%)
   NEXT Enemy%
 
-  REM Show/hide debug display
-  DebugOut%=0
 
   DIM SpeckLocations%(49,1)
   FOR Speck%=0 TO 49
@@ -79,16 +125,7 @@ DEF PROC_main
     SpeckLocations%(Speck%,Y) = RND(SCREENGFXHEIGHT%)
   NEXT Speck%
 
-  REM Used for centiseconds per frame calcs
-  Cents% = TIME
 
-  MODE SCREENMODE%
-
-  REM Position text cursor at graphics location
-  VDU 5
-
-  REM Sprite set
-  sprite_area% = FNload_sprites("Spr")
 
   REPEAT
     REM Store current time and last time
