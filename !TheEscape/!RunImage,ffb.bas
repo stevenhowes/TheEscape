@@ -22,6 +22,7 @@ END
 
 DEF PROCtitle
   CLS
+
   PROCdraw_sprite("intro_25",320,256)
   KEY$ = GET$
 
@@ -67,9 +68,11 @@ DEF PROCfinal_gfx_setup
 ENDPROC
 
 DEF PROCaudio_setup
-  VOICES 2
+  SOUND ON
+  VOICES 4
   VOICE 1,"WaveSynth-Beep"
   VOICE 2,"Percussion-Noise"
+  VOICE 3,"StringLib-Hard"
 ENDPROC
 
 DEF PROCmain_scene1
@@ -84,6 +87,7 @@ DEF PROCmain_scene1
   PlayerStructuralIntegrity%=100
   PlayerSprite$ = "player_ship"
   PlayerExplodeNextFrame% = 0
+  PlayerRemainingDistance% = 1500000
   DIM PlayerHitbox%(3)
   PlayerHitbox%() = 0,0,60,81
   DieEnd% = 0
@@ -92,9 +96,12 @@ DEF PROCmain_scene1
   PlayerPhaserOffset%(0,Y) = 75
   PlayerPhaserOffset%(1,X) = 40
   PlayerPhaserOffset%(1,Y) = 75
+  PlayerPhaserDamagePerSecond% = 2
 
   LeftID% = -1
   RightID% = -1
+  LeftFiring% = 0
+  RightFiring% = 0
 
   DIM EnemyHitbox%(1,3)
   EnemyHitbox%(0,0) = 0
@@ -137,6 +144,8 @@ DEF PROCmain_scene1
 
     REM Controls
 
+    PlayerRemainingDistance% = PlayerRemainingDistance% - (Cents% - LastCents%) * PlayerVelocity%
+
     PROCplayer_ship_handle_damage
     PROCenemy_ship_handle_damage
     PROCenemy_ship_move
@@ -149,6 +158,7 @@ DEF PROCmain_scene1
       PROCenemy_ship_collide_player
       REM PROCenemy_ship_collide_npc
       PROCplayer_arc_calculatetarget
+      PROCplayer_weapons_damage
       PROCspecks_move
     ENDIF
 
@@ -169,8 +179,11 @@ DEF PROCmain_scene1
     REM Player
     PROCplayer_ship_draw
     PROCplayer_target_draw
-
     PROCenemy_ship_draw
+
+    IF PlayerStructuralIntegrity% > 0 THEN
+     PROCplayer_weapons_draw
+    ENDIF
 
     REM UI
     PROChud_draw
@@ -183,13 +196,48 @@ DEF PROCmain_scene1
 
 ENDPROC
 
+DEF PROCplayer_weapons_damage
+  IF LeftID% < 0 THEN
+    LeftFiring% = 0
+  ENDIF
+  IF RightID% < 0 THEN
+    RightFiring% = 0
+  ENDIF
+
+  IF LeftFiring% = 1 THEN
+    EnemyHealth%(LeftID%) = EnemyHealth%(LeftID%) - ((Cents% - LastCents%) * PlayerPhaserDamagePerSecond%)
+  ENDIF
+
+  IF RightFiring% = 1 THEN
+    EnemyHealth%(RightID%) = EnemyHealth%(RightID%) - ((Cents% - LastCents%) * PlayerPhaserDamagePerSecond%)
+  ENDIF
+ENDPROC
+
+
+DEF PROCplayer_weapons_draw
+IF LeftID% < 0 THEN
+LeftFiring% = 0
+ENDIF
+IF RightID% < 0 THEN
+RightFiring% = 0
+ENDIF
+
+  IF LeftFiring% = 1 THEN
+    LINE PlayerLocation%(X) + PlayerPhaserOffset%(0,X), PlayerLocation%(Y) + PlayerPhaserOffset%(0,Y), EnemyLocations%(LeftID%,X) + (EnemyHitbox%(EnemyHitboxID%(LeftID%),2)/2), EnemyLocations%(LeftID%,Y)
+  ENDIF
+
+  IF RightFiring% = 1 THEN
+    LINE PlayerLocation%(X) + PlayerPhaserOffset%(1,X), PlayerLocation%(Y) + PlayerPhaserOffset%(1,Y), EnemyLocations%(RightID%,X) + (EnemyHitbox%(EnemyHitboxID%(RightID%),2)/2), EnemyLocations%(RightID%,Y)
+  ENDIF
+ENDPROC
+
 DEF PROCplayer_ship_handle_damage
   IF PlayerStructuralIntegrity% <= 0 THEN
       IF TIME > PlayerExplodeNextFrame% THEN
         PlayerExplodeNextFrame% = TIME + 4
         IF PlayerSprite$ = "player_ship" THEN
           DieEnd% = TIME + 150
-         SOUND 2,-5,0,50
+         SOUND 2,-5, 20,50
         ENDIF
         CASE PlayerSprite$ OF
            WHEN "player_ship": PlayerSprite$ = "explode_shp1"
@@ -210,7 +258,9 @@ ENDPROC
 
 DEF PROCenemy_ship_handle_damage
   FOR Enemy%=0 TO MaxEnemies% - 1
+    REM Destruction
     IF EnemyHealth%(Enemy%) <= 0 THEN
+      EnemyCollidable%(Enemy%) = 0
       IF EnemySprites$(Enemy%) = "durno_ship2" THEN
          SOUND 2,-5,0,50
       ENDIF
@@ -226,6 +276,7 @@ DEF PROCenemy_ship_handle_damage
         ENDCASE
       ENDIF
     ENDIF
+
   NEXT Enemy%
 ENDPROC
 
@@ -236,14 +287,14 @@ DEF PROCrespawn_enemy(Enemy%)
     EnemyVelocity%(Enemy%,X) = 0
     EnemyVelocity%(Enemy%,Y) = RND(3) + 2
     EnemyHitboxID%(Enemy%) = RND(2)-1
-    EnemyHealth%(Enemy%) = 100
+    EnemyHealth%(Enemy%) = 1000
     EnemyCollidable%(Enemy%) = 1
     EnemyCollideForce%(Enemy%) = 1000
     EnemyExplodeNextFrame% = 0
     IF EnemyHitboxID%(Enemy%) = 1 THEN
       EnemySprites$(Enemy%) = "durno_ship2"
       EnemyVelocity%(Enemy%,X) = RND(3) - 2
-      EnemyVelocity%(Enemy%,Y) = RND(10) + 6
+      EnemyVelocity%(Enemy%,Y) = RND(2) + 6
       EnemyHealth%(Enemy%) = 30
       EnemyCollideForce%(Enemy%) = 30
     ENDIF
@@ -294,6 +345,8 @@ DEF PROChud_draw
   PRINT "Integrity"
   MOVE 75,SCREENGFXHEIGHT%-110
   PRINT "Velocity"
+  MOVE 75,SCREENGFXHEIGHT%-140
+  PRINT "Distance"
 
   REM Attribute values
   GCOL 0,7
@@ -303,6 +356,8 @@ DEF PROChud_draw
   PRINT PlayerStructuralIntegrity%
   MOVE 130,SCREENGFXHEIGHT%-110
   PRINT PlayerVelocity%
+  MOVE 130,SCREENGFXHEIGHT%-140
+  PRINT PlayerRemainingDistance% DIV 1000
 ENDPROC
 
 DEF PROCenemy_ship_collide_npc
@@ -351,7 +406,7 @@ DEF PROCenemy_ship_collide_player
       MOVE x1+w1,y1+h1
       IF EnemyCollidable%(Enemy%) = 1 THEN
         PlayerVelocity% = PlayerVelocity% / 2
-        EnemyHealth%(Enemy%) = EnemyHealth%(Enemy%) - 30
+        EnemyHealth%(Enemy%) = EnemyHealth%(Enemy%) - 300
         PlayerStructuralIntegrity% = PlayerStructuralIntegrity% - EnemyCollideForce%(Enemy%)
         EnemyCollidable%(Enemy%) = 0
         EnemyVelocity%(Enemy%,Y) = EnemyVelocity%(Enemy%,Y) / 2
@@ -456,6 +511,10 @@ DEF PROCinputs
        PlayerVelocity% = 0
      ENDIF
   ENDIF
+  IF INKEY(-99) THEN
+     LeftFiring% = 1
+     RightFiring% = 1
+  ENDIF
   IF INKEY(-17) THEN
       IF DebugOut% = 0 THEN DebugOut% = 1
   ENDIF
@@ -468,6 +527,8 @@ DEF PROCplayer_target_draw
     RECT EnemyLocations%(LeftID%,X) + EnemyHitbox%(EnemyHitboxID%(LeftID%),X) - 10, EnemyLocations%(LeftID%,1) + EnemyHitbox%(EnemyHitboxID%(LeftID%),1) - 10, EnemyHitbox%(EnemyHitboxID%(LeftID%),2) + 20, EnemyHitbox%(EnemyHitboxID%(LeftID%),3) + 20
 
     RECT EnemyLocations%(LeftID%,X) + EnemyHitbox%(EnemyHitboxID%(LeftID%),X) - 8, EnemyLocations%(LeftID%,1) + EnemyHitbox%(EnemyHitboxID%(LeftID%),1) - 8, EnemyHitbox%(EnemyHitboxID%(LeftID%),2) + 16, EnemyHitbox%(EnemyHitboxID%(LeftID%),3) + 16
+    MOVE EnemyLocations%(LeftID%,X), EnemyLocations%(LeftID%,Y) - 20
+    PRINT STR$(EnemyHealth%(LeftID%))
   ENDIF
 
   IF RightID% >= 0 THEN
@@ -476,6 +537,8 @@ DEF PROCplayer_target_draw
     RECT EnemyLocations%(RightID%,X) + EnemyHitbox%(EnemyHitboxID%(RightID%),X) -10, EnemyLocations%(RightID%,1) + EnemyHitbox%(EnemyHitboxID%(RightID%),1) -10, EnemyHitbox%(EnemyHitboxID%(RightID%),2) +20, EnemyHitbox%(EnemyHitboxID%(RightID%),3) +20
 
     RECT EnemyLocations%(RightID%,X) + EnemyHitbox%(EnemyHitboxID%(RightID%),X) -8, EnemyLocations%(RightID%,1) + EnemyHitbox%(EnemyHitboxID%(RightID%),1) -8, EnemyHitbox%(EnemyHitboxID%(RightID%),2) +16, EnemyHitbox%(EnemyHitboxID%(RightID%),3) +16
+    MOVE EnemyLocations%(RightID%,X), EnemyLocations%(RightID%,Y) - 20
+    PRINT STR$(EnemyHealth%(RightID%))
   ENDIF
 ENDPROC
 
@@ -492,12 +555,12 @@ DEF PROCdebugoutput
   PRINT "X:   " + STR$(PlayerLocation%(0)) " Y: " STR$(PlayerLocation%(1))
   PRINT "CPF: " + STR$(Cents% - LastCents%)
   PRINT "Scr: " + STR$(Scr%)
-  PRINT "Left: " + STR$(LeftID%)
-  PRINT "Right: " + STR$(RightID%)
+  PRINT "Left: " + STR$(LeftID%) + " - " + STR$(LeftFiring%)
+  PRINT "Right: " + STR$(RightID%) + " - " + STR$(RightFiring%)
 
   FOR Enemy%=0 TO MaxEnemies% - 1
-    PRINT "NPC:" STR$(Enemy%) + " " + FNpad(STR$(EnemyLocations%(Enemy%,X)),4) + " " + FNpad(STR$(EnemyLocations%(Enemy%,Y)),4) + " " + FNpad(STR$(EnemyVelocity%(Enemy%,X)),3) + " " + FNpad(STR$(EnemyVelocity%(Enemy%,Y)),3)
-    PRINT FNpad(STR$(EnemyHealth%(Enemy%)),3) + " " + EnemySprites$(Enemy%) + " " + STR$(EnemyExplodeNextFrame%)
+    PRINT "NPC:" STR$(Enemy%) + ": " + FNpad(STR$(EnemyLocations%(Enemy%,X)),4) + "," + FNpad(STR$(EnemyLocations%(Enemy%,Y)),4) + " V: " + FNpad(STR$(EnemyVelocity%(Enemy%,X)),2) + "," + FNpad(STR$(EnemyVelocity%(Enemy%,Y)),2)
+    PRINT "H: " + FNpad(STR$(EnemyHealth%(Enemy%)),3)
   NEXT Enemy%
 
 
