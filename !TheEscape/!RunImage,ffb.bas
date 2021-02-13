@@ -142,23 +142,29 @@ DEF PROCmain_scene1
     LastCents% = Cents%
     Cents% = TIME
 
-    REM Controls
-
+    REM Mission distance left
     PlayerRemainingDistance% = PlayerRemainingDistance% - (Cents% - LastCents%) * PlayerVelocity%
 
+    REM Damage is always handled
     PROCplayer_ship_handle_damage
     PROCenemy_ship_handle_damage
+
+    REM Enemy movement - even if player dead
     PROCenemy_ship_move
 
     IF PlayerStructuralIntegrity% > 0 THEN
+      REM Controls
       PROCinputs
-
 
       REM NPCs
       PROCenemy_ship_collide_player
       REM PROCenemy_ship_collide_npc
+
+      REM Player Weapons calculations
       PROCplayer_arc_calculatetarget
       PROCplayer_weapons_damage
+
+      REM Environment calculations
       PROCspecks_move
     ENDIF
 
@@ -179,6 +185,8 @@ DEF PROCmain_scene1
     REM Player
     PROCplayer_ship_draw
     PROCplayer_target_draw
+
+    REM Draw enemy stuff
     PROCenemy_ship_draw
 
     IF PlayerStructuralIntegrity% > 0 THEN
@@ -215,12 +223,13 @@ ENDPROC
 
 
 DEF PROCplayer_weapons_draw
-IF LeftID% < 0 THEN
-LeftFiring% = 0
-ENDIF
-IF RightID% < 0 THEN
-RightFiring% = 0
-ENDIF
+  REM If no targets then dont fire phasers
+  IF LeftID% < 0 THEN
+    LeftFiring% = 0
+  ENDIF
+  IF RightID% < 0 THEN
+    RightFiring% = 0
+  ENDIF
 
   IF LeftFiring% = 1 THEN
     LINE PlayerLocation%(X) + PlayerPhaserOffset%(0,X), PlayerLocation%(Y) + PlayerPhaserOffset%(0,Y), EnemyLocations%(LeftID%,X) + (EnemyHitbox%(EnemyHitboxID%(LeftID%),2)/2), EnemyLocations%(LeftID%,Y)
@@ -360,6 +369,7 @@ DEF PROChud_draw
   PRINT PlayerRemainingDistance% DIV 1000
 ENDPROC
 
+REM Not using this, NPC/NPC collide is needless maths..
 DEF PROCenemy_ship_collide_npc
   FOR Enemy%=0 TO MaxEnemies% - 1
    CollidesWith% = Enemy%
