@@ -493,11 +493,19 @@ DEF PROCinputs
     ShipSprite$ = "player_shipr"
     ResetShipSprite% = Cents% + 20
     PlayerLocation%(0) = PlayerLocation%(0) + (XMovePerCent% * (Cents% - LastCents%))
+    IF PlayerLocation%(0) > (SCREENGFXWIDTH% - PlayerHitbox%(2)) THEN
+       PlayerLocation%(0) = (SCREENGFXWIDTH% - PlayerHitbox%(2))
+       ShipSprite$ = "player_ship"
+    ENDIF
   ENDIF
   IF INKEY(-26) THEN
     ShipSprite$ = "player_shipl"
     ResetShipSprite% = Cents% + 20
     PlayerLocation%(0) = PlayerLocation%(0) - (XMovePerCent% * (Cents% - LastCents%))
+    IF PlayerLocation%(0) < 0 THEN
+       PlayerLocation%(0) = 0
+       ShipSprite$ = "player_ship"
+    ENDIF
   ENDIF
   IF INKEY(-58) THEN
      PlayerVelocity% = PlayerVelocity% + 1
