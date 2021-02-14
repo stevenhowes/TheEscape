@@ -270,6 +270,18 @@ DEF PROCspawn_projectile(Projectile%,Px%,Py%,Vx%,Vy%,Sprite$,Damage%)
     NEXT P%
   ENDIF
 
+  REM If no velocity X specified we're targetting the player
+  REM This actually has some inaccuracy in due to integers, so no need
+  REM to try and do that.. It's a feature!
+  IF Vx = 0 THEN
+    Velocity% = Vy%
+    Xdistance% = PlayerLocation%(X) - Px%
+    Ydistance% = Py% - PlayerLocation%(Y)
+    distance% = SQR((Xdistance%^2) + (Ydistance%^2))
+    Vx% = Xdistance% / (distance% / 10 * Velocity%)
+    Vy% = Ydistance% / (distance% / 10 * Velocity%)
+  ENDIF
+
   REM If no free IDs then we go without
   IF Projectile% >= 0 THEN
     ProjectileLocations%(Projectile%,X) = Px%
@@ -616,7 +628,7 @@ DEF PROCinputs
      RightFiring% = 1
   ENDIF
   IF INKEY(-34) THEN
-    PROCspawn_projectile(-1,SCREENGFXWIDTH%/2,SCREENGFXHEIGHT%/2,1,1,"photon",50)
+    PROCspawn_projectile(-1,SCREENGFXWIDTH%/2,SCREENGFXHEIGHT%/2,0,2,"photon",50)
   ENDIF
 
   IF INKEY(-17) THEN
