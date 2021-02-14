@@ -40,7 +40,6 @@ ENDPROC
 DEF PROCinitial_gfx_setup
   SCREENMODE% = 4
 
-
   MODE SCREENMODE%
 
   sprite_area% = FNload_sprites("Spr")
@@ -56,7 +55,7 @@ DEF PROCfinal_gfx_setup
   IF SCREENMODE% = 28 THEN
     SCREENGFXWIDTH%=1280
     SCREENGFXHEIGHT%=960
-    MaxEnemies% = 2
+    MaxEnemies% = 5
     PlayerYHeightDivide%=20
   ENDIF
 
@@ -127,6 +126,8 @@ DEF PROCmain_scene1
   DIM EnemyCollidable%(MaxEnemies% -1)
   DIM EnemyCollideForce%(MaxEnemies% -1)
   DIM EnemyExplodeNextFrame%(MaxEnemies% -1)
+  DIM EnemyNextFire%(MaxEnemies% -1)
+  DIM EnemyFireInterval%(MaxEnemies% -1)
 
   MaxProjectiles% = 10
   DIM ProjectileLocations%(MaxProjectiles% - 1,1)
@@ -179,6 +180,7 @@ DEF PROCmain_scene1
 
       REM NPCs
       PROCenemy_ship_collide_player
+      PROCprojectile_collide_player
       REM PROCenemy_ship_collide_npc
 
       REM Player Weapons calculations
@@ -238,6 +240,12 @@ DEF PROCprojectile_move
       IF ProjectileLocations%(Projectile%,0) > SCREENGFXWIDTH% THEN
         ProjectileState%(Projectile%) = 0
       ENDIF
+      IF ProjectileLocations%(Projectile%,0) < 0 THEN
+        ProjectileState%(Projectile%) = 0
+      ENDIF
+      IF ProjectileLocations%(Projectile%,1) > (SCREENGFXHEIGHT% * 2) THEN
+        ProjectileState%(Projectile%) = 0
+      ENDIF
       IF ProjectileLocations%(Projectile%,1) < 0 THEN
         ProjectileState%(Projectile%) = 0
       ENDIF
@@ -271,15 +279,14 @@ DEF PROCspawn_projectile(Projectile%,Px%,Py%,Vx%,Vy%,Sprite$,Damage%)
   ENDIF
 
   REM If no velocity X specified we're targetting the player
-  REM This actually has some inaccuracy in due to integers, so no need
-  REM to try and do that.. It's a feature!
-  IF Vx = 0 THEN
-    Velocity% = Vy%
+  REM TODO: This is baaaaadly broken. Suspect something floating point..
+  IF Vx% = 0 THEN
+    Velocity% = 10
     Xdistance% = PlayerLocation%(X) - Px%
     Ydistance% = Py% - PlayerLocation%(Y)
     distance% = SQR((Xdistance%^2) + (Ydistance%^2))
-    Vx% = Xdistance% / (distance% / 10 * Velocity%)
-    Vy% = Ydistance% / (distance% / 10 * Velocity%)
+    Vx% = Xdistance% / (distance% / Velocity%)
+    Vy% = Ydistance% / (distance% / Velocity%)
   ENDIF
 
   REM If no free IDs then we go without
@@ -296,6 +303,7 @@ DEF PROCspawn_projectile(Projectile%,Px%,Py%,Vx%,Vy%,Sprite$,Damage%)
     ProjectileFrameInterval%(Projectile%) = 10
     ProjectileFrameNext%(Projectile%) = Cents% + ProjectileFrameInterval%(Projectile%)
   ENDIF
+
 ENDPROC
 
 DEF PROCplayer_weapons_damage
@@ -363,6 +371,7 @@ DEF PROCenemy_ship_handle_damage
   FOR Enemy%=0 TO MaxEnemies% - 1
     REM Destruction
     IF EnemyHealth%(Enemy%) <= 0 THEN
+       EnemyNextFire%(Enemy%) = 0
       EnemyCollidable%(Enemy%) = 0
       IF EnemySprites$(Enemy%) = "durno_ship2" THEN
          SOUND 2,-5,0,50
@@ -388,18 +397,22 @@ DEF PROCrespawn_enemy(Enemy%)
     EnemyLocations%(Enemy%,Y) = SCREENGFXHEIGHT% + (RND(SCREENGFXHEIGHT%/2) * (Enemy% + 1))
     EnemySprites$(Enemy%) = "durno_ship"
     EnemyVelocity%(Enemy%,X) = 0
-    EnemyVelocity%(Enemy%,Y) = RND(3)
+    EnemyVelocity%(Enemy%,Y) = RND(3) + 2
     EnemyHitboxID%(Enemy%) = RND(2)-1
     EnemyHealth%(Enemy%) = 1000
     EnemyCollidable%(Enemy%) = 1
     EnemyCollideForce%(Enemy%) = 1000
-    EnemyExplodeNextFrame% = 0
+    EnemyExplodeNextFrame%(Enemy%) = 0
+    EnemyNextFire%(Enemy%) = Cents%
+    EnemyFireInterval%(Enemy%) = 100
+
     IF EnemyHitboxID%(Enemy%) = 1 THEN
       EnemySprites$(Enemy%) = "durno_ship2"
       EnemyVelocity%(Enemy%,X) = RND(3) - 2
-      EnemyVelocity%(Enemy%,Y) = RND(2) + 3
+      EnemyVelocity%(Enemy%,Y) = RND(2) + 6
       EnemyHealth%(Enemy%) = 30
       EnemyCollideForce%(Enemy%) = 30
+      EnemyNextFire%(Enemy%) = 0
     ENDIF
 ENDPROC
 
@@ -429,9 +442,21 @@ DEF PROCenemy_ship_move
 
     EnemyLocations%(Enemy%,X) = EnemyLocations%(Enemy%,X) - ((Cents% - LastCents%) * EnemyVelocity%(Enemy%,X))
 
+    IF EnemyLocations%(Enemy%,Y) < SCREENGFXHEIGHT%/2 THEN
+      EnemyNextFire%(Enemy%) = 0
+    ENDIF
+
+    IF EnemyNextFire%(Enemy%) > 0 THEN
+      IF EnemyNextFire%(Enemy%) < Cents% THEN
+        PROCspawn_projectile(-1,EnemyLocations%(Enemy%,X),EnemyLocations%(Enemy%,Y),0,EnemyVelocity%(Enemy%,Y),"photon",10)
+        EnemyNextFire%(Enemy%) = Cents% + EnemyFireInterval%(Enemy%)
+      ENDIF
+    ENDIF
+
     IF EnemyLocations%(Enemy%,Y) <= 0 THEN
       PROCrespawn_enemy(Enemy%)
     ENDIF
+
   NEXT Enemy%
 ENDPROC
 
@@ -518,6 +543,31 @@ DEF PROCenemy_ship_collide_player
       ENDIF
     ENDIF
   NEXT Enemy%
+ENDPROC
+
+REM Handle enemy collisions with player
+DEF PROCprojectile_collide_player
+  FOR P%=0 TO MaxProjectiles% - 1
+
+    REM This is our hitbox
+    x1 = ProjectileLocations%(P%,X)
+    y1 = ProjectileLocations%(P%,Y)
+    w1 = 10
+    h1 = 10
+
+    REM Collision with a player
+    x2 = PlayerLocation%(X) + PlayerHitbox%(0)
+    y2 = PlayerLocation%(Y) + PlayerHitbox%(1)
+    w2 = PlayerHitbox%(2)
+    h2 = PlayerHitbox%(3)
+    IF FNcollide(x1, y1, w1, h1, x2, y2, w2, h2) = 1 THEN
+      MOVE x1+w1,y1+h1
+      PlayerVelocity% = PlayerVelocity% * 0.75
+      PlayerStructuralIntegrity% = PlayerStructuralIntegrity% - ProjectileDamage%(P%)
+      ProjectileState%(P%) = 0
+      ProjectileLocations%(P%,0) = 0
+    ENDIF
+  NEXT P%
 ENDPROC
 
 DEF FNcollide(x1,y1,w1,h1,x2,y2,w2,h2)
