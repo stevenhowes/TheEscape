@@ -26,9 +26,9 @@ DEF PROCtitle
   PROCdraw_sprite("intro_25",320,256)
   KEY$ = GET$
 
-  IF KEY$ = "1" THEN
-    SCREENMODE% = 32
-  ENDIF
+  REMIF KEY$ = "1" THEN
+  REM  SCREENMODE% = 32
+  REMENDIF
   IF KEY$ = "2" THEN
     SCREENMODE% = 28
   ENDIF
@@ -47,17 +47,17 @@ DEF PROCinitial_gfx_setup
 ENDPROC
 
 DEF PROCfinal_gfx_setup
-  IF SCREENMODE% = 32 THEN
-    SCREENGFXWIDTH%=1600
-    SCREENGFXHEIGHT%=1200
-    MaxEnemies% = 10
-    PlayerYHeightDivide%=8
-  ENDIF
+  REMIF SCREENMODE% = 32 THEN
+  REM  SCREENGFXWIDTH%=1600
+  REM  SCREENGFXHEIGHT%=1200
+  REM  MaxEnemies% = 10
+  REM  PlayerYHeightDivide%=8
+  REMENDIF
   IF SCREENMODE% = 28 THEN
     SCREENGFXWIDTH%=1280
     SCREENGFXHEIGHT%=960
     MaxEnemies% = 5
-    PlayerYHeightDivide%=6
+    PlayerYHeightDivide%=20
   ENDIF
 
   MODE SCREENMODE%
@@ -113,7 +113,7 @@ DEF PROCmain_scene1
   EnemyHitbox%(1,2) = 38
   EnemyHitbox%(1,3) = 56
 
-  XMovePerCent%=5
+  XMovePerCent%=10
   ResetShipSprite% = 0
 
   DIM EnemyLocations%(MaxEnemies% - 1,1)
