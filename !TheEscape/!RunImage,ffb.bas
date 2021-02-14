@@ -84,7 +84,6 @@ DEF PROCmain_scene1
   DIM PlayerLocation%(1)
   PlayerLocation%(X) = SCREENGFXWIDTH%/2
   PlayerLocation%(Y) = SCREENGFXHEIGHT%/PlayerYHeightDivide%
-  PlayerVelocity%=0
   PlayerShields%=100
   PlayerStructuralIntegrity%=100
   PlayerSprite$ = "player_ship"
@@ -164,7 +163,7 @@ DEF PROCmain_scene1
     Cents% = TIME
 
     REM Mission distance left
-    PlayerRemainingDistance% = PlayerRemainingDistance% - (Cents% - LastCents%) * PlayerVelocity%
+    PlayerRemainingDistance% = PlayerRemainingDistance% - (Cents% - LastCents%) * 100
 
     REM Damage is always handled
     PROCplayer_ship_handle_damage
@@ -420,14 +419,14 @@ DEF PROCspecks_draw
   REM Specks / stars
   FOR Speck%=0 TO 49
     GCOL 0,0
-    LINE SpeckLocations%(Speck%,X),SpeckLocations%(Speck%,Y),SpeckLocations%(Speck%,X),(PlayerVelocity% / 3) + SpeckLocations%(Speck%,Y)
+    LINE SpeckLocations%(Speck%,X),SpeckLocations%(Speck%,Y),SpeckLocations%(Speck%,X),30 + SpeckLocations%(Speck%,Y)
   NEXT Speck%
 ENDPROC
 
 DEF PROCspecks_move
   REM Specks / stars
   FOR Speck%=0 TO 49
-    SpeckLocations%(Speck%,Y) = SpeckLocations%(Speck%,Y) - ((Cents% - LastCents%) * PlayerVelocity%/10)
+    SpeckLocations%(Speck%,Y) = SpeckLocations%(Speck%,Y) - ((Cents% - LastCents%) * 10
     IF SpeckLocations%(Speck%,Y) < 0 THEN
       SpeckLocations%(Speck%,Y) = SCREENGFXHEIGHT%
       SpeckLocations%(Speck%,X) = RND(SCREENGFXWIDTH%)
@@ -438,7 +437,7 @@ ENDPROC
 REM Move enemy ship (display and physical)
 DEF PROCenemy_ship_move
   FOR Enemy%=0 TO MaxEnemies% - 1
-    EnemyLocations%(Enemy%,Y) = EnemyLocations%(Enemy%,Y) - ((Cents% - LastCents%) * PlayerVelocity%/20) - ((Cents% - LastCents%) * EnemyVelocity%(Enemy%,Y))
+    EnemyLocations%(Enemy%,Y) = EnemyLocations%(Enemy%,Y) - ((Cents% - LastCents%) * EnemyVelocity%(Enemy%,Y))
 
     EnemyLocations%(Enemy%,X) = EnemyLocations%(Enemy%,X) - ((Cents% - LastCents%) * EnemyVelocity%(Enemy%,X))
 
@@ -482,8 +481,7 @@ DEF PROChud_draw
   PRINT PlayerShields%
   MOVE 130,SCREENGFXHEIGHT%-80
   PRINT PlayerStructuralIntegrity%
-  MOVE 130,SCREENGFXHEIGHT%-110
-  PRINT PlayerVelocity%
+
   MOVE 130,SCREENGFXHEIGHT%-140
   PRINT PlayerRemainingDistance% DIV 1000
 ENDPROC
@@ -534,7 +532,6 @@ DEF PROCenemy_ship_collide_player
     IF FNcollide(x1, y1, w1, h1, x2, y2, w2, h2) = 1 THEN
       MOVE x1+w1,y1+h1
       IF EnemyCollidable%(Enemy%) = 1 THEN
-        PlayerVelocity% = PlayerVelocity% / 2
         EnemyHealth%(Enemy%) = EnemyHealth%(Enemy%) - 300
         PlayerStructuralIntegrity% = PlayerStructuralIntegrity% - EnemyCollideForce%(Enemy%)
         EnemyCollidable%(Enemy%) = 0
@@ -545,7 +542,7 @@ DEF PROCenemy_ship_collide_player
   NEXT Enemy%
 ENDPROC
 
-REM Handle enemy collisions with player
+REM Handle projectile collisions with player
 DEF PROCprojectile_collide_player
   FOR P%=0 TO MaxProjectiles% - 1
 
@@ -562,7 +559,6 @@ DEF PROCprojectile_collide_player
     h2 = PlayerHitbox%(3)
     IF FNcollide(x1, y1, w1, h1, x2, y2, w2, h2) = 1 THEN
       MOVE x1+w1,y1+h1
-      PlayerVelocity% = PlayerVelocity% * 0.75
       PlayerStructuralIntegrity% = PlayerStructuralIntegrity% - ProjectileDamage%(P%)
       ProjectileState%(P%) = 0
       ProjectileLocations%(P%,0) = 0
@@ -661,18 +657,6 @@ DEF PROCinputs
        ShipSprite$ = "player_ship"
     ENDIF
   ENDIF
-  IF INKEY(-58) THEN
-     PlayerVelocity% = PlayerVelocity% + 1
-     IF PlayerVelocity% > 100 THEN
-       PlayerVelocity% = 100
-     ENDIF
-  ENDIF
-  IF INKEY(-42) THEN
-     PlayerVelocity% = PlayerVelocity% - 1
-     IF PlayerVelocity% < 0 THEN
-       PlayerVelocity% = 0
-     ENDIF
-  ENDIF
   IF INKEY(-99) THEN
      LeftFiring% = 1
      RightFiring% = 1
@@ -680,7 +664,6 @@ DEF PROCinputs
   IF INKEY(-34) THEN
     PROCspawn_projectile(-1,SCREENGFXWIDTH%/2,SCREENGFXHEIGHT%/2,0,2,"photon",50)
   ENDIF
-
   IF INKEY(-17) THEN
       IF DebugOut% = 0 THEN DebugOut% = 1
   ENDIF
