@@ -21,7 +21,11 @@ Up Arrow: Increase velocity
 
 Right Arrow: Decrease velocity
 
+Space Bar: Fire phasers
+
 Q: Display debug info
+
+W: Projectile debug
 
 
 

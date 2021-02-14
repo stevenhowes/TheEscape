@@ -56,7 +56,7 @@ DEF PROCfinal_gfx_setup
   IF SCREENMODE% = 28 THEN
     SCREENGFXWIDTH%=1280
     SCREENGFXHEIGHT%=960
-    MaxEnemies% = 5
+    MaxEnemies% = 2
     PlayerYHeightDivide%=20
   ENDIF
 
@@ -79,6 +79,9 @@ DEF PROCmain_scene1
   REM Current graphics buffer
   Scr% = 1
 
+  REM Make sure to reset this here so initial stuff is ok
+  Cents% = TIME
+
   DIM PlayerLocation%(1)
   PlayerLocation%(X) = SCREENGFXWIDTH%/2
   PlayerLocation%(Y) = SCREENGFXHEIGHT%/PlayerYHeightDivide%
@@ -96,7 +99,7 @@ DEF PROCmain_scene1
   PlayerPhaserOffset%(0,Y) = 75
   PlayerPhaserOffset%(1,X) = 40
   PlayerPhaserOffset%(1,Y) = 75
-  PlayerPhaserDamagePerSecond% = 2
+  PlayerPhaserDamagePerSecond% = 3
 
   LeftID% = -1
   RightID% = -1
@@ -125,10 +128,27 @@ DEF PROCmain_scene1
   DIM EnemyCollideForce%(MaxEnemies% -1)
   DIM EnemyExplodeNextFrame%(MaxEnemies% -1)
 
+  MaxProjectiles% = 10
+  DIM ProjectileLocations%(MaxProjectiles% - 1,1)
+  DIM ProjectileVelocity%(MaxProjectiles% - 1,1)
+  DIM ProjectileState%(MaxProjectiles% - 1)
+  DIM ProjectileFrame%(MaxProjectiles% - 1)
+  DIM ProjectileMaxFrame%(MaxProjectiles% - 1)
+  DIM ProjectileDamage%(MaxProjectiles% - 1)
+  DIM ProjectileSprite$(MaxProjectiles% - 1)
+  DIM ProjectileFrameInterval%(MaxProjectiles% - 1)
+  DIM ProjectileFrameNext%(MaxProjectiles% - 1)
+
   REM Random it up for now
   FOR Enemy%=0 TO MaxEnemies% - 1
     PROCrespawn_enemy(Enemy%)
   NEXT Enemy%
+
+  FOR Projectile%=0 TO MaxProjectiles% - 1
+    ProjectileState%(MaxProjectiles% - 1) = 0
+  NEXT Projectile%
+
+
 
 
   DIM SpeckLocations%(49,1)
@@ -149,8 +169,9 @@ DEF PROCmain_scene1
     PROCplayer_ship_handle_damage
     PROCenemy_ship_handle_damage
 
-    REM Enemy movement - even if player dead
+    REM Enemy/projectile movement - even if player dead
     PROCenemy_ship_move
+    PROCprojectile_move
 
     IF PlayerStructuralIntegrity% > 0 THEN
       REM Controls
@@ -188,6 +209,7 @@ DEF PROCmain_scene1
 
     REM Draw enemy stuff
     PROCenemy_ship_draw
+    PROCprojectile_draw
 
     IF PlayerStructuralIntegrity% > 0 THEN
      PROCplayer_weapons_draw
@@ -202,6 +224,66 @@ DEF PROCmain_scene1
 
   UNTIL FALSE
 
+ENDPROC
+
+DEF PROCprojectile_move
+  FOR Projectile%=0 TO MaxProjectiles% - 1
+    IF ProjectileState%(Projectile%) > 0 THEN
+
+      REM Calculate new locations from velocity
+      ProjectileLocations%(Projectile%,0) +=  ((Cents% - LastCents%) * ProjectileVelocity%(Projectile%,0))
+      ProjectileLocations%(Projectile%,1) -=  ((Cents% - LastCents%) * ProjectileVelocity%(Projectile%,1))
+
+      REM If they go out of bounds then disable
+      IF ProjectileLocations%(Projectile%,0) > SCREENGFXWIDTH% THEN
+        ProjectileState%(Projectile%) = 0
+      ENDIF
+      IF ProjectileLocations%(Projectile%,1) < 0 THEN
+        ProjectileState%(Projectile%) = 0
+      ENDIF
+
+    ENDIF
+  NEXT Projectile%
+ENDPROC
+
+DEF PROCprojectile_draw
+  FOR Projectile%=0 TO MaxProjectiles% - 1
+    IF ProjectileState%(Projectile%) > 0 THEN
+      IF Cents% > ProjectileFrameNext%(Projectile%) THEN
+        ProjectileFrame%(Projectile%) = ProjectileFrame%(Projectile%) + 1
+        ProjectileFrameNext%(Projectile%) = Cents% + ProjectileFrameInterval%(Projectile%)
+      ENDIF
+      IF ProjectileFrame%(Projectile%) > ProjectileMaxFrame%(Projectile%) THEN
+        ProjectileFrame%(Projectile%) = 1
+      ENDIF
+      PROCdraw_sprite(ProjectileSprite$(Projectile%) + STR$(ProjectileFrame%(Projectile%)),ProjectileLocations%(Projectile%,0),ProjectileLocations%(Projectile%,1))
+    ENDIF
+  NEXT Projectile%
+ENDPROC
+
+DEF PROCspawn_projectile(Projectile%,Px%,Py%,Vx%,Vy%,Sprite$,Damage%)
+  IF Projectile% < 0 THEN
+    FOR P%=0 TO MaxProjectiles% - 1
+        IF ProjectileState%(P%) = 0 THEN
+          Projectile% = P%
+        ENDIF
+    NEXT P%
+  ENDIF
+
+  REM If no free IDs then we go without
+  IF Projectile% >= 0 THEN
+    ProjectileLocations%(Projectile%,X) = Px% + (Projectile% * 40)
+    ProjectileLocations%(Projectile%,Y) = Py%
+    ProjectileVelocity%(Projectile%,X) = Vx%
+    ProjectileVelocity%(Projectile%,Y) = Vy%
+    ProjectileState%(Projectile%) = 1
+    ProjectileFrame%(Projectile%) = 1
+    ProjectileMaxFrame%(Projectile%) = 2
+    ProjectileSprite$(Projectile%) = Sprite$
+    ProjectileDamage%(Projectile%) = Damage%
+    ProjectileFrameInterval%(Projectile%) = 10
+    ProjectileFrameNext%(Projectile%) = Cents% + ProjectileFrameInterval%(Projectile%)
+  ENDIF
 ENDPROC
 
 DEF PROCplayer_weapons_damage
@@ -294,7 +376,7 @@ DEF PROCrespawn_enemy(Enemy%)
     EnemyLocations%(Enemy%,Y) = SCREENGFXHEIGHT% + (RND(SCREENGFXHEIGHT%/2) * (Enemy% + 1))
     EnemySprites$(Enemy%) = "durno_ship"
     EnemyVelocity%(Enemy%,X) = 0
-    EnemyVelocity%(Enemy%,Y) = RND(3) + 2
+    EnemyVelocity%(Enemy%,Y) = RND(3)
     EnemyHitboxID%(Enemy%) = RND(2)-1
     EnemyHealth%(Enemy%) = 1000
     EnemyCollidable%(Enemy%) = 1
@@ -303,7 +385,7 @@ DEF PROCrespawn_enemy(Enemy%)
     IF EnemyHitboxID%(Enemy%) = 1 THEN
       EnemySprites$(Enemy%) = "durno_ship2"
       EnemyVelocity%(Enemy%,X) = RND(3) - 2
-      EnemyVelocity%(Enemy%,Y) = RND(2) + 6
+      EnemyVelocity%(Enemy%,Y) = RND(2) + 3
       EnemyHealth%(Enemy%) = 30
       EnemyCollideForce%(Enemy%) = 30
     ENDIF
@@ -533,6 +615,10 @@ DEF PROCinputs
      LeftFiring% = 1
      RightFiring% = 1
   ENDIF
+  IF INKEY(-34) THEN
+    PROCspawn_projectile(-1,SCREENGFXWIDTH%/2,SCREENGFXHEIGHT%/2,1,1,"photon",50)
+  ENDIF
+
   IF INKEY(-17) THEN
       IF DebugOut% = 0 THEN DebugOut% = 1
   ENDIF
@@ -581,6 +667,9 @@ DEF PROCdebugoutput
     PRINT "H: " + FNpad(STR$(EnemyHealth%(Enemy%)),3)
   NEXT Enemy%
 
+  FOR P%=0 TO MaxProjectiles% - 1
+    PRINT "P:" STR$(P%) + ": " + FNpad(STR$(ProjectileLocations%(P%,X)),4) + "," + FNpad(STR$(ProjectileLocations%(P%,Y)),4) + " V: " + FNpad(STR$(ProjectileVelocity%(P%,X)),2) + "," + FNpad(STR$(ProjectileVelocity%(P%,Y)),2) + STR$(ProjectileState%(P%))
+  NEXT P%
 
   FOR Enemy%=0 TO MaxEnemies% - 1
     RECT EnemyLocations%(Enemy%,X) + EnemyHitbox%(EnemyHitboxID%(Enemy%),X), EnemyLocations%(Enemy%,1) + EnemyHitbox%(EnemyHitboxID%(Enemy%),1), EnemyHitbox%(EnemyHitboxID%(Enemy%),2), EnemyHitbox%(EnemyHitboxID%(Enemy%),3)
