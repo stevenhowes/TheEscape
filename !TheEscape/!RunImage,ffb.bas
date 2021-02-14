@@ -272,7 +272,7 @@ DEF PROCspawn_projectile(Projectile%,Px%,Py%,Vx%,Vy%,Sprite$,Damage%)
 
   REM If no free IDs then we go without
   IF Projectile% >= 0 THEN
-    ProjectileLocations%(Projectile%,X) = Px% + (Projectile% * 40)
+    ProjectileLocations%(Projectile%,X) = Px%
     ProjectileLocations%(Projectile%,Y) = Py%
     ProjectileVelocity%(Projectile%,X) = Vx%
     ProjectileVelocity%(Projectile%,Y) = Vy%
