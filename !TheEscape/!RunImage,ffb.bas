@@ -22,19 +22,8 @@ END
 
 DEF PROCtitle
   CLS
-
-  PROCdraw_sprite("intro_25",320,256)
-  KEY$ = GET$
-
-  REMIF KEY$ = "1" THEN
-  REM  SCREENMODE% = 32
-  REMENDIF
-  IF KEY$ = "2" THEN
     SCREENMODE% = 28
-  ENDIF
-  IF SCREENMODE% = 4 THEN
-    PROCtitle
-  ENDIF
+
 ENDPROC
 
 DEF PROCinitial_gfx_setup
@@ -403,7 +392,7 @@ DEF PROCrespawn_enemy(Enemy%)
     EnemyCollideForce%(Enemy%) = 1000
     EnemyExplodeNextFrame%(Enemy%) = 0
     EnemyNextFire%(Enemy%) = Cents%
-    EnemyFireInterval%(Enemy%) = 100
+    EnemyFireInterval%(Enemy%) = 200
 
     IF EnemyHitboxID%(Enemy%) = 1 THEN
       EnemySprites$(Enemy%) = "durno_ship2"
@@ -426,7 +415,7 @@ ENDPROC
 DEF PROCspecks_move
   REM Specks / stars
   FOR Speck%=0 TO 49
-    SpeckLocations%(Speck%,Y) = SpeckLocations%(Speck%,Y) - ((Cents% - LastCents%) * 10
+    SpeckLocations%(Speck%,Y) = SpeckLocations%(Speck%,Y) - ((Cents% - LastCents%) * 2)
     IF SpeckLocations%(Speck%,Y) < 0 THEN
       SpeckLocations%(Speck%,Y) = SCREENGFXHEIGHT%
       SpeckLocations%(Speck%,X) = RND(SCREENGFXWIDTH%)
