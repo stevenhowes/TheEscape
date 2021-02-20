@@ -10,31 +10,16 @@ Cents% = TIME
 
 PROCaudio_setup
 
-PROCinitial_gfx_setup
-
-PROCtitle
-
-PROCfinal_gfx_setup
+PROCgfx_setup
 
 PROCmain_scene1
 
 END
 
-DEF PROCtitle
+DEF PROCgfx_setup
   CLS
-    SCREENMODE% = 28
-
-ENDPROC
-
-DEF PROCinitial_gfx_setup
-  SCREENMODE% = 4
-
-  MODE SCREENMODE%
-
+  SCREENMODE% = 28
   sprite_area% = FNload_sprites("Spr")
-ENDPROC
-
-DEF PROCfinal_gfx_setup
   REMIF SCREENMODE% = 32 THEN
   REM  SCREENGFXWIDTH%=1600
   REM  SCREENGFXHEIGHT%=1200
@@ -60,7 +45,8 @@ DEF PROCaudio_setup
   VOICES 4
   VOICE 1,"WaveSynth-Beep"
   VOICE 2,"Percussion-Noise"
-  VOICE 3,"StringLib-Hard"
+  VOICE 3,"Percussion-Soft"
+  VOICE 4,"Percussion-Noise"
 ENDPROC
 
 DEF PROCmain_scene1
@@ -362,7 +348,9 @@ DEF PROCenemy_ship_handle_damage
        EnemyNextFire%(Enemy%) = 0
       EnemyCollidable%(Enemy%) = 0
       IF EnemySprites$(Enemy%) = "durno_ship2" THEN
-         SOUND 2,-5,0,50
+        SOUND 1,-5,0,100
+        SOUND 3,-15,0,1000
+        SOUND 2,-10,1,100
       ENDIF
       IF TIME > EnemyExplodeNextFrame%(Enemy%) THEN
         EnemyExplodeNextFrame%(Enemy%) = TIME + 4
