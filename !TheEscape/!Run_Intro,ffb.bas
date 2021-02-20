@@ -3,7 +3,7 @@ OFF
 CLS
 
 sprite_area% = FNload_sprites("Spr")
-PROCdraw_sprite("intro_28",320,400)
+PROCdraw_sprite("tng",320,400)
 
 
 DIM Notes$(12)
