@@ -307,6 +307,9 @@ DEF PROCplayer_weapons_draw
     RightFiring% = 0
   ENDIF
 
+  REM Phasers are orange
+  GCOL 0,7
+
   IF LeftFiring% = 1 THEN
     LINE PlayerLocation%(X) + PlayerPhaserOffset%(0,X), PlayerLocation%(Y) + PlayerPhaserOffset%(0,Y), EnemyLocations%(LeftID%,X) + (EnemyHitbox%(EnemyHitboxID%(LeftID%),2)/2), EnemyLocations%(LeftID%,Y)
   ENDIF
